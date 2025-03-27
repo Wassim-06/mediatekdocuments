@@ -178,6 +178,9 @@ namespace MediaTekDocuments.view
             this.label53 = new System.Windows.Forms.Label();
             this.label54 = new System.Windows.Forms.Label();
             this.btnReceptionRechercher = new System.Windows.Forms.Button();
+            this.btnAjouterLivre = new System.Windows.Forms.Button();
+            this.btnModifierLivre = new System.Windows.Forms.Button();
+            this.btnSupprimerLivre = new System.Windows.Forms.Button();
             this.tabOngletsApplication.SuspendLayout();
             this.tabLivres.SuspendLayout();
             this.grpLivresInfos.SuspendLayout();
@@ -214,16 +217,19 @@ namespace MediaTekDocuments.view
             this.tabOngletsApplication.Location = new System.Drawing.Point(0, 0);
             this.tabOngletsApplication.Name = "tabOngletsApplication";
             this.tabOngletsApplication.SelectedIndex = 0;
-            this.tabOngletsApplication.Size = new System.Drawing.Size(883, 659);
+            this.tabOngletsApplication.Size = new System.Drawing.Size(883, 713);
             this.tabOngletsApplication.TabIndex = 0;
             // 
             // tabLivres
             // 
+            this.tabLivres.Controls.Add(this.btnSupprimerLivre);
+            this.tabLivres.Controls.Add(this.btnModifierLivre);
+            this.tabLivres.Controls.Add(this.btnAjouterLivre);
             this.tabLivres.Controls.Add(this.grpLivresInfos);
             this.tabLivres.Controls.Add(this.grpLivresRecherche);
             this.tabLivres.Location = new System.Drawing.Point(4, 22);
             this.tabLivres.Name = "tabLivres";
-            this.tabLivres.Size = new System.Drawing.Size(875, 633);
+            this.tabLivres.Size = new System.Drawing.Size(875, 687);
             this.tabLivres.TabIndex = 2;
             this.tabLivres.Text = "Livres";
             this.tabLivres.UseVisualStyleBackColor = true;
@@ -1776,11 +1782,41 @@ namespace MediaTekDocuments.view
             this.btnReceptionRechercher.UseVisualStyleBackColor = true;
             this.btnReceptionRechercher.Click += new System.EventHandler(this.btnReceptionRechercher_Click);
             // 
+            // btnAjouterLivre
+            // 
+            this.btnAjouterLivre.Location = new System.Drawing.Point(687, 645);
+            this.btnAjouterLivre.Name = "btnAjouterLivre";
+            this.btnAjouterLivre.Size = new System.Drawing.Size(75, 23);
+            this.btnAjouterLivre.TabIndex = 20;
+            this.btnAjouterLivre.Text = "Ajouter";
+            this.btnAjouterLivre.UseVisualStyleBackColor = true;
+            this.btnAjouterLivre.Click += new System.EventHandler(this.btnAjouterLivre_Click);
+            // 
+            // btnModifierLivre
+            // 
+            this.btnModifierLivre.Location = new System.Drawing.Point(147, 645);
+            this.btnModifierLivre.Name = "btnModifierLivre";
+            this.btnModifierLivre.Size = new System.Drawing.Size(75, 23);
+            this.btnModifierLivre.TabIndex = 21;
+            this.btnModifierLivre.Text = "Modifier\n\n";
+            this.btnModifierLivre.UseVisualStyleBackColor = true;
+            this.btnModifierLivre.Click += new System.EventHandler(this.btnModifierLivre_Click);
+            // 
+            // btnSupprimerLivre
+            // 
+            this.btnSupprimerLivre.Location = new System.Drawing.Point(228, 645);
+            this.btnSupprimerLivre.Name = "btnSupprimerLivre";
+            this.btnSupprimerLivre.Size = new System.Drawing.Size(75, 23);
+            this.btnSupprimerLivre.TabIndex = 22;
+            this.btnSupprimerLivre.Text = "Supprimer";
+            this.btnSupprimerLivre.UseVisualStyleBackColor = true;
+            this.btnSupprimerLivre.Click += new System.EventHandler(this.btnSupprimerLivre_Click);
+            // 
             // FrmMediatek
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(883, 659);
+            this.ClientSize = new System.Drawing.Size(883, 713);
             this.Controls.Add(this.tabOngletsApplication);
             this.Name = "FrmMediatek";
             this.Text = "Gestion des documents de la médiathèque";
@@ -1970,6 +2006,9 @@ namespace MediaTekDocuments.view
         private System.Windows.Forms.Label label57;
         private System.Windows.Forms.Label label58;
         private System.Windows.Forms.Label label59;
+        private System.Windows.Forms.Button btnSupprimerLivre;
+        private System.Windows.Forms.Button btnModifierLivre;
+        private System.Windows.Forms.Button btnAjouterLivre;
     }
 }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.Http;
 using Newtonsoft.Json.Linq;
+using System.Windows.Forms;
 
 namespace MediaTekDocuments.manager
 {
@@ -60,16 +61,29 @@ namespace MediaTekDocuments.manager
         /// <param name="message">message à envoyer dans l'URL</param>
         /// <param name="parametres">contenu de variables à mettre dans body</param>
         /// <returns>liste d'objets (select) ou liste vide (ok) ou null si erreur</returns>
-        
-        public JObject RecupDistant(string methode, string message, String parametres)
+
+        public JObject RecupDistant(string methode, string message, string parametres)
         {
-            // transformation des paramètres pour les mettre dans le body
+            // Avant d'envoyer la requête
+            string fullUrl = httpClient.BaseAddress + message;
+            string bodyContent = parametres ?? "";
+
+            // Décode le paramètre pour affichage propre
+            string decodedParams = Uri.UnescapeDataString(bodyContent);
+
+            Console.WriteLine("🔽 Requête envoyée à l'API 🔽");
+            Console.WriteLine($"➡️ Méthode : {methode}");
+            Console.WriteLine($"➡️ URL     : {fullUrl}");
+            Console.WriteLine($"➡️ Body (encodé)   : {bodyContent}");
+            Console.WriteLine($"➡️ Body (décodé)   : {decodedParams}\n");
+
+
             StringContent content = null;
-            if(!(parametres is null))
+            if (!string.IsNullOrEmpty(parametres))
             {
                 content = new StringContent(parametres, System.Text.Encoding.UTF8, "application/x-www-form-urlencoded");
             }
-            // envoi du message et attente de la réponse
+
             switch (methode)
             {
                 case "GET":
@@ -84,13 +98,24 @@ namespace MediaTekDocuments.manager
                 case "DELETE":
                     httpResponse = httpClient.DeleteAsync(message).Result;
                     break;
-                // methode incorrecte
                 default:
                     return new JObject();
             }
-            // récupération de l'information retournée par l'api
-            return httpResponse.Content.ReadAsAsync<JObject>().Result;
+
+            string responseData = httpResponse.Content.ReadAsStringAsync().Result;
+
+            try
+            {
+                return JObject.Parse(responseData);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("❌ Erreur JSON : " + ex.Message + "\nRéponse brute :\n" + responseData);
+                return null;
+            }
         }
+
+
 
     }
 }

@@ -1,6 +1,12 @@
 ﻿using System.Collections.Generic;
 using MediaTekDocuments.model;
 using MediaTekDocuments.dal;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using MediaTekDocuments.manager;
+using System.Windows.Forms;
+using System.Linq;
+using System;
 
 namespace MediaTekDocuments.controller
 {
@@ -9,10 +15,12 @@ namespace MediaTekDocuments.controller
     /// </summary>
     class FrmMediatekController
     {
+
         /// <summary>
         /// Objet d'accès aux données
         /// </summary>
         private readonly Access access;
+        private readonly ApiRest api = ApiRest.GetInstance("http://localhost/rest_mediatekdocuments/", "admin:adminpwd");
 
         /// <summary>
         /// Récupération de l'instance unique d'accès aux données
@@ -96,5 +104,48 @@ namespace MediaTekDocuments.controller
         {
             return access.CreerExemplaire(exemplaire);
         }
+        public bool AjouterLivre(Livre livre)
+        {
+            // Données pour le document
+            var docData = new Dictionary<string, string>()
+            {
+                { "id", livre.Id },
+                { "titre", livre.Titre },
+                { "image", livre.Image },
+                { "idGenre", livre.IdGenre },
+                { "idPublic", livre.IdPublic },
+                { "idRayon", livre.IdRayon }
+            };
+                    string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
+
+                    // Données pour livres_dvd
+                    var livreDvdData = new Dictionary<string, string>()
+            {
+                { "id", livre.Id }
+            };
+                    string livreDvdParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(livreDvdData))}";
+
+                    // Données pour le livre
+                    var livreData = new Dictionary<string, string>()
+            {
+                { "id", livre.Id },
+                { "isbn", livre.Isbn },
+                { "auteur", livre.Auteur },
+                { "collection", livre.Collection }
+            };
+            string livreParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(livreData))}";
+
+            JObject responseDoc = api.RecupDistant("POST", "document", docParams);
+            JObject responseLivreDvd = api.RecupDistant("POST", "livres_dvd", livreDvdParams);
+            JObject responseLivre = api.RecupDistant("POST", "livre", livreParams);
+
+            return responseDoc?["code"]?.ToString() == "200" &&
+                   responseLivreDvd?["code"]?.ToString() == "200" &&
+                   responseLivre?["code"]?.ToString() == "200";
+        }
+
+
+
+
     }
 }

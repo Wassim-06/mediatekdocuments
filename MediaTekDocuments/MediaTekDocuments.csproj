@@ -84,6 +84,12 @@
     <Compile Include="manager\ApiRest.cs" />
     <Compile Include="controller\FrmMediatekController.cs" />
     <Compile Include="dal\Access.cs" />
+    <Compile Include="view\FrmAjoutLivre.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="view\FrmAjoutLivre.Designer.cs">
+      <DependentUpon>FrmAjoutLivre.cs</DependentUpon>
+    </Compile>
     <Compile Include="view\FrmMediatek.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -112,6 +118,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="view\FrmAjoutLivre.resx">
+      <DependentUpon>FrmAjoutLivre.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="view\FrmMediatek.resx">
       <DependentUpon>FrmMediatek.cs</DependentUpon>
     </EmbeddedResource>

@@ -362,6 +362,69 @@ namespace MediaTekDocuments.view
         }
         #endregion
 
+        #region Gestion Livres - Ajout / Modification / Suppression
+
+        private void btnAjouterLivre_Click(object sender, EventArgs e)
+        {
+            // Dictionnaires pour remplir les combos
+            Dictionary<string, string> genres = controller.GetAllGenres()
+                .ToDictionary(genre => genre.Id, genre => genre.Libelle);
+            Dictionary<string, string> publics = controller.GetAllPublics()
+                .ToDictionary(pub => pub.Id, pub => pub.Libelle);
+            Dictionary<string, string> rayons = controller.GetAllRayons()
+                .ToDictionary(ray => ray.Id, ray => ray.Libelle);
+
+            // Ouvre la modale
+            FrmAjoutLivre frmAjout = new FrmAjoutLivre(genres, publics, rayons);
+
+            if (frmAjout.ShowDialog() == DialogResult.OK)
+            {
+                // Récupère les valeurs saisies dans la modale
+                Livre nouveauLivre = new Livre(
+                    frmAjout.Id,
+                    frmAjout.Titre,
+                    frmAjout.Image,           // ✅ image
+                    frmAjout.Isbn,            // ✅ isbn
+                    frmAjout.Auteur,          // ✅ auteur
+                    frmAjout.Collection,      // ✅ collection
+                    frmAjout.IdGenre,
+                    genres[frmAjout.IdGenre],
+                    frmAjout.IdPublic,
+                    publics[frmAjout.IdPublic],
+                    frmAjout.IdRayon,
+                    rayons[frmAjout.IdRayon]
+                );
+
+                // Appel à l’API via le contrôleur
+                if (controller.AjouterLivre(nouveauLivre))
+                {
+                    MessageBox.Show("Livre ajouté avec succès !");
+                    lesLivres = controller.GetAllLivres();
+                    RemplirLivresListeComplete();
+                }
+                else
+                {
+                    MessageBox.Show("Erreur lors de l’ajout du livre.");
+                }
+            }
+        }
+
+
+
+
+
+        private void btnModifierLivre_Click(object sender, EventArgs e)
+        {
+            // À faire
+        }
+
+        private void btnSupprimerLivre_Click(object sender, EventArgs e)
+        {
+            // À faire
+        }
+
+        #endregion
+
         #region Onglet Dvd
         private readonly BindingSource bdgDvdListe = new BindingSource();
         private List<Dvd> lesDvd = new List<Dvd>();
