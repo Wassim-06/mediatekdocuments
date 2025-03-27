@@ -4,9 +4,8 @@ using MediaTekDocuments.dal;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using MediaTekDocuments.manager;
-using System.Windows.Forms;
-using System.Linq;
 using System;
+using System.Windows.Forms;
 
 namespace MediaTekDocuments.controller
 {
@@ -143,6 +142,43 @@ namespace MediaTekDocuments.controller
                    responseLivreDvd?["code"]?.ToString() == "200" &&
                    responseLivre?["code"]?.ToString() == "200";
         }
+
+        public bool PeutSupprimerDocument(string idDocument)
+        {
+            return access.PeutSupprimerDocument(idDocument);
+        }
+
+        public bool SupprimerLivre(string idDocument)
+        {
+            string jsonData = JsonConvert.SerializeObject(new { id = idDocument });
+            string param = $"champs={Uri.EscapeDataString(jsonData)}";
+
+            JObject responseLivre = api.RecupDistant("DELETE", "livre", param);
+            if (responseLivre?["code"]?.ToString() != "200")
+            {
+                MessageBox.Show("❌ Suppression dans la table 'livre' échouée.\n" + responseLivre.ToString());
+                return false;
+            }
+
+            JObject responseLivreDvd = api.RecupDistant("DELETE", "livres_dvd", param);
+            if (responseLivreDvd?["code"]?.ToString() != "200")
+            {
+                MessageBox.Show("❌ Suppression dans la table 'livres_dvd' échouée.\n" + responseLivreDvd.ToString());
+                return false;
+            }
+
+            JObject responseDocument = api.RecupDistant("DELETE", "document", param);
+            if (responseDocument?["code"]?.ToString() != "200")
+            {
+                MessageBox.Show("❌ Suppression dans la table 'document' échouée.\n" + responseDocument.ToString());
+                return false;
+            }
+
+            return true;
+        }
+
+
+
 
 
 

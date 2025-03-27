@@ -143,6 +143,14 @@ namespace MediaTekDocuments.dal
             return lesExemplaires;
         }
 
+        public List<Exemplaire> GetExemplairesByIdDocument(string idDocument)
+        {
+            string jsonIdDocument = convertToJson("id", idDocument);
+            List<Exemplaire> exemplaires = TraitementRecup<Exemplaire>(GET, "exemplaire/" + jsonIdDocument, null);
+            return exemplaires;
+        }
+
+
         /// <summary>
         /// ecriture d'un exemplaire en base de données
         /// </summary>
@@ -242,6 +250,18 @@ namespace MediaTekDocuments.dal
             {
                 serializer.Serialize(writer, value);
             }
+        }
+
+        /// <summary>
+        /// Vérifie si un document peut être supprimé (aucun exemplaire associé)
+        /// </summary>
+        /// <param name="idDocument">id du document</param>
+        /// <returns>true si aucun exemplaire, false sinon</returns>
+        public bool PeutSupprimerDocument(string idDocument)
+        {
+            string message = "exemplaire/" + convertToJson("id", idDocument);
+            List<Exemplaire> exemplaires = TraitementRecup<Exemplaire>(GET, message, null);
+            return exemplaires.Count == 0;
         }
 
     }

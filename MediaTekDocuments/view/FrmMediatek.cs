@@ -420,8 +420,44 @@ namespace MediaTekDocuments.view
 
         private void btnSupprimerLivre_Click(object sender, EventArgs e)
         {
-            // À faire
+            if (dgvLivresListe.CurrentCell != null)
+            {
+                Livre livreSelectionne = (Livre)bdgLivresListe.List[bdgLivresListe.Position];
+
+                DialogResult confirmation = MessageBox.Show(
+                    $"Voulez-vous vraiment supprimer le livre : {livreSelectionne.Titre} ?",
+                    "Confirmation de suppression",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning
+                );
+
+                if (confirmation == DialogResult.Yes)
+                {
+                    if (controller.PeutSupprimerDocument(livreSelectionne.Id))
+                    {
+                        if (controller.SupprimerLivre(livreSelectionne.Id))
+                        {
+                            MessageBox.Show("Livre supprimé avec succès !");
+                            lesLivres = controller.GetAllLivres();
+                            RemplirLivresListeComplete();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Erreur lors de la suppression du livre.");
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Impossible de supprimer ce livre car des exemplaires y sont associés.");
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Veuillez sélectionner un livre à supprimer.");
+            }
         }
+
 
         #endregion
 
