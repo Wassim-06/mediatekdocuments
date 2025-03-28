@@ -218,5 +218,202 @@ namespace MediaTekDocuments.controller
                    responseLivre?["code"]?.ToString() == "200";
         }
 
+
+        public bool AjouterDVD(Dvd dvd)
+        {
+            // Données pour la table "document"
+            var docData = new Dictionary<string, string>()
+            {
+                { "id", dvd.Id },
+                { "titre", dvd.Titre },
+                { "image", dvd.Image },
+                { "idGenre", dvd.IdGenre },
+                { "idPublic", dvd.IdPublic },
+                { "idRayon", dvd.IdRayon }
+            };
+                    string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
+
+                    // Données pour la table "livres_dvd"
+                    var dvdLivreData = new Dictionary<string, string>()
+            {
+                { "id", dvd.Id }
+            };
+                    string dvdLivreParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(dvdLivreData))}";
+
+                    // Données spécifiques pour la table "dvd"
+                    var dvdData = new Dictionary<string, string>()
+            {
+                { "id", dvd.Id },
+                { "realisateur", dvd.Realisateur },
+                { "synopsis", dvd.Synopsis },
+                { "duree", dvd.Duree.ToString() }
+            };
+            string dvdParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(dvdData))}";
+
+            JObject responseDoc = api.RecupDistant("POST", "document", docParams);
+            JObject responseDvdLivre = api.RecupDistant("POST", "livres_dvd", dvdLivreParams);
+            JObject responseDvd = api.RecupDistant("POST", "dvd", dvdParams);
+
+            return responseDoc?["code"]?.ToString() == "200" &&
+                   responseDvdLivre?["code"]?.ToString() == "200" &&
+                   responseDvd?["code"]?.ToString() == "200";
+        }
+
+        public bool ModifierDVD(Dvd dvd)
+        {
+            // Préparer les données pour la table "document"
+            var docData = new Dictionary<string, string>()
+            {
+                { "id", dvd.Id },
+                { "titre", dvd.Titre },
+                { "image", dvd.Image },
+                { "idGenre", dvd.IdGenre },
+                { "idPublic", dvd.IdPublic },
+                { "idRayon", dvd.IdRayon }
+            };
+                    string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
+
+                    // Pour "livres_dvd"
+                    var dvdLivreData = new Dictionary<string, string>()
+            {
+                { "id", dvd.Id }
+            };
+                    string dvdLivreParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(dvdLivreData))}";
+
+                    // Pour "dvd" (les champs spécifiques)
+                    var dvdData = new Dictionary<string, string>()
+            {
+                { "id", dvd.Id },
+                { "realisateur", dvd.Realisateur },
+                { "synopsis", dvd.Synopsis },
+                { "duree", dvd.Duree.ToString() }
+            };
+            string dvdParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(dvdData))}";
+
+            // IMPORTANT : ajoute l'ID dans l'URL !
+            JObject responseDoc = api.RecupDistant("PUT", "document/" + dvd.Id, docParams);
+            JObject responseDvdLivre = api.RecupDistant("PUT", "livres_dvd/" + dvd.Id, dvdLivreParams);
+            JObject responseDvd = api.RecupDistant("PUT", "dvd/" + dvd.Id, dvdParams);
+
+            return responseDoc?["code"]?.ToString() == "200" &&
+                   responseDvdLivre?["code"]?.ToString() == "200" &&
+                   responseDvd?["code"]?.ToString() == "200";
+        }
+
+        public bool SupprimerDVD(string idDVD)
+        {
+            string jsonData = JsonConvert.SerializeObject(new { id = idDVD });
+            string param = $"champs={Uri.EscapeDataString(jsonData)}";
+
+            // En suivant la documentation, on peut aussi transmettre l'ID dans l'URL
+            JObject responseDvd = api.RecupDistant("DELETE", "dvd", param);
+            JObject responseDvdLivre = api.RecupDistant("DELETE", "livres_dvd", param);
+            JObject responseDoc = api.RecupDistant("DELETE", "document", param);
+
+            if (responseDvd?["code"]?.ToString() != "200")
+            {
+                MessageBox.Show("❌ Suppression dans la table 'dvd' échouée.\n" + responseDvd.ToString());
+                return false;
+            }
+            if (responseDvdLivre?["code"]?.ToString() != "200")
+            {
+                MessageBox.Show("❌ Suppression dans la table 'livres_dvd' échouée.\n" + responseDvdLivre.ToString());
+                return false;
+            }
+            if (responseDoc?["code"]?.ToString() != "200")
+            {
+                MessageBox.Show("❌ Suppression dans la table 'document' échouée.\n" + responseDoc.ToString());
+                return false;
+            }
+            return true;
+        }
+
+        public bool AjouterRevue(Revue revue)
+        {
+            // Préparer les données pour la table "document"
+            var docData = new Dictionary<string, string>()
+            {
+                { "id", revue.Id },
+                { "titre", revue.Titre },
+                { "image", revue.Image },
+                { "idGenre", revue.IdGenre },
+                { "idPublic", revue.IdPublic },
+                { "idRayon", revue.IdRayon }
+            };
+                    string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
+
+            // Préparer les données spécifiques pour la table "revue"
+            var revueData = new Dictionary<string, string>()
+            {
+                { "id", revue.Id },
+                { "periodicite", revue.Periodicite },
+                { "delaiMiseADispo", revue.DelaiMiseADispo.ToString() }
+                // Si tu n'as pas de date de parution, omets-la ou ajoute-la si nécessaire.
+            };
+            string revueParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(revueData))}";
+
+
+            // Envoi de la requête POST sur "document" et sur "revue"
+            JObject responseDoc = api.RecupDistant("POST", "document", docParams);
+            JObject responseRevue = api.RecupDistant("POST", "revue", revueParams);
+
+            return responseDoc?["code"]?.ToString() == "200" &&
+                   responseRevue?["code"]?.ToString() == "200";
+        }
+
+        public bool ModifierRevue(Revue revue)
+        {
+            // Préparer les données pour la table "document"
+            var docData = new Dictionary<string, string>()
+            {
+                { "id", revue.Id },
+                { "titre", revue.Titre },
+                { "image", revue.Image },
+                { "idGenre", revue.IdGenre },
+                { "idPublic", revue.IdPublic },
+                { "idRayon", revue.IdRayon }
+            };
+                    string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
+
+            // Préparer les données pour la table "revue"
+            var revueData = new Dictionary<string, string>()
+            {
+                { "id", revue.Id },
+                { "periodicite", revue.Periodicite },
+                { "delaiMiseADispo", revue.DelaiMiseADispo.ToString() }
+            };
+            string revueParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(revueData))}";
+
+
+            // Envoi de la requête PUT avec l'ID dans l'URL pour chaque table
+            JObject responseDoc = api.RecupDistant("PUT", "document/" + revue.Id, docParams);
+            JObject responseRevue = api.RecupDistant("PUT", "revue/" + revue.Id, revueParams);
+
+            return responseDoc?["code"]?.ToString() == "200" &&
+                   responseRevue?["code"]?.ToString() == "200";
+        }
+
+
+        public bool SupprimerRevue(string idRevue)
+        {
+            string jsonData = JsonConvert.SerializeObject(new { id = idRevue });
+            string param = $"champs={Uri.EscapeDataString(jsonData)}";
+
+            JObject responseRevue = api.RecupDistant("DELETE", "revue", param);
+            JObject responseDoc = api.RecupDistant("DELETE", "document", param);
+
+            if (responseRevue?["code"]?.ToString() != "200")
+            {
+                MessageBox.Show("❌ Suppression dans la table 'revue' échouée.\n" + responseRevue.ToString());
+                return false;
+            }
+            if (responseDoc?["code"]?.ToString() != "200")
+            {
+                MessageBox.Show("❌ Suppression dans la table 'document' échouée.\n" + responseDoc.ToString());
+                return false;
+            }
+            return true;
+        }
+
     }
 }

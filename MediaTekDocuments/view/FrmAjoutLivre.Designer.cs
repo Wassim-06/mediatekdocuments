@@ -123,7 +123,7 @@ namespace MediaTekDocuments.view
             this.btnValider.Name = "btnValider";
             this.btnValider.Size = new System.Drawing.Size(75, 23);
             this.btnValider.TabIndex = 9;
-            this.btnValider.Text = "Ajouter";
+            this.btnValider.Text = "Valider";
             this.btnValider.UseVisualStyleBackColor = true;
             this.btnValider.Click += new System.EventHandler(this.btnValider_Click);
             // 

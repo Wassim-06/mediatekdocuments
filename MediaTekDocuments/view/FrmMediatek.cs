@@ -836,6 +836,160 @@ namespace MediaTekDocuments.view
         }
         #endregion
 
+        #region Gestion DVD - Ajout / Modification / Suppression
+
+        private void btnAjouterDVD_Click(object sender, EventArgs e)
+        {
+            // Récupérer les dictionnaires pour remplir les ComboBox
+            Dictionary<string, string> genres = controller.GetAllGenres().ToDictionary(g => g.Id, g => g.Libelle);
+            Dictionary<string, string> publics = controller.GetAllPublics().ToDictionary(p => p.Id, p => p.Libelle);
+            Dictionary<string, string> rayons = controller.GetAllRayons().ToDictionary(r => r.Id, r => r.Libelle);
+
+            // Ouvrir la modale spécifique pour les DVD
+            FrmAjoutDVD frmAjout = new FrmAjoutDVD(genres, publics, rayons);
+
+            if (frmAjout.ShowDialog() == DialogResult.OK)
+            {
+                // Créer l'objet DVD à partir des valeurs de la modale
+                Dvd nouveauDvd = new Dvd(
+                    frmAjout.Id,
+                    frmAjout.Titre,
+                    frmAjout.Image,
+                    int.Parse(frmAjout.Duree),      // Durée (int) en 4ème position
+                    frmAjout.Realisateur,           // Réalisateur (string) en 5ème position
+                    frmAjout.Synopsis,              // Synopsis (string) en 6ème position
+                    frmAjout.IdGenre,
+                    genres[frmAjout.IdGenre],
+                    frmAjout.IdPublic,
+                    publics[frmAjout.IdPublic],
+                    frmAjout.IdRayon,
+                    rayons[frmAjout.IdRayon]
+                );
+
+
+                // Appeler l'API via le contrôleur
+                if (controller.AjouterDVD(nouveauDvd))
+                {
+                    MessageBox.Show("DVD ajouté avec succès !");
+                    lesDvd = controller.GetAllDvd();
+                    RemplirDvdListeComplete();
+                }
+                else
+                {
+                    MessageBox.Show("Erreur lors de l’ajout du DVD.");
+                }
+            }
+        }
+
+
+        private void btnModifierDVD_Click(object sender, EventArgs e)
+        {
+            if (dgvDvdListe.CurrentCell != null)
+            {
+                // Récupérer le DVD sélectionné
+                Dvd dvdSelectionne = (Dvd)bdgDvdListe.List[bdgDvdListe.Position];
+
+                // Ouvrir la modale en mode édition (FrmAjoutDVD)
+                FrmAjoutDVD frmModifier = new FrmAjoutDVD(
+                    controller.GetAllGenres().ToDictionary(g => g.Id, g => g.Libelle),
+                    controller.GetAllPublics().ToDictionary(p => p.Id, p => p.Libelle),
+                    controller.GetAllRayons().ToDictionary(r => r.Id, r => r.Libelle)
+                );
+
+                // Pré-remplir le formulaire avec les données du DVD sélectionné
+                frmModifier.Id = dvdSelectionne.Id;
+                frmModifier.Titre = dvdSelectionne.Titre;
+                frmModifier.Image = dvdSelectionne.Image;
+                frmModifier.Realisateur = dvdSelectionne.Realisateur;
+                frmModifier.Synopsis = dvdSelectionne.Synopsis;
+                frmModifier.Duree = dvdSelectionne.Duree.ToString();
+                frmModifier.IdGenre = dvdSelectionne.IdGenre;
+                frmModifier.IdPublic = dvdSelectionne.IdPublic;
+                frmModifier.IdRayon = dvdSelectionne.IdRayon;
+
+                if (frmModifier.ShowDialog() == DialogResult.OK)
+                {
+                    // Création de l'objet DVD avec les nouvelles valeurs
+                    Dvd dvdModifie = new Dvd(
+                        frmModifier.Id,
+                        frmModifier.Titre,
+                        frmModifier.Image,
+                        int.Parse(frmModifier.Duree),  // Durée en 4ème position
+                        frmModifier.Realisateur,         // Réalisateur en 5ème position
+                        frmModifier.Synopsis,            // Synopsis en 6ème position
+                        frmModifier.IdGenre,
+                        controller.GetAllGenres().FirstOrDefault(g => g.Id == frmModifier.IdGenre)?.Libelle,
+                        frmModifier.IdPublic,
+                        controller.GetAllPublics().FirstOrDefault(p => p.Id == frmModifier.IdPublic)?.Libelle,
+                        frmModifier.IdRayon,
+                        controller.GetAllRayons().FirstOrDefault(r => r.Id == frmModifier.IdRayon)?.Libelle
+                    );
+
+
+                    // Appeler la méthode de modification du contrôleur
+                    if (controller.ModifierDVD(dvdModifie))
+                    {
+                        MessageBox.Show("DVD modifié avec succès !");
+                        lesDvd = controller.GetAllDvd();
+                        RemplirDvdListeComplete();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Erreur lors de la modification du DVD.");
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Veuillez sélectionner un DVD à modifier.");
+            }
+        }
+
+
+        private void btnSupprimerDVD_Click(object sender, EventArgs e)
+        {
+            if (dgvDvdListe.CurrentCell != null)
+            {
+                Dvd dvdSelectionne = (Dvd)bdgDvdListe.List[bdgDvdListe.Position];
+
+                DialogResult confirmation = MessageBox.Show(
+                    $"Voulez-vous vraiment supprimer le DVD : {dvdSelectionne.Titre} ?",
+                    "Confirmation de suppression",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning
+                );
+
+                if (confirmation == DialogResult.Yes)
+                {
+                    // Vérifier si le DVD peut être supprimé (aucun exemplaire/commande attaché)
+                    if (controller.PeutSupprimerDocument(dvdSelectionne.Id))
+                    {
+                        if (controller.SupprimerDVD(dvdSelectionne.Id))
+                        {
+                            MessageBox.Show("DVD supprimé avec succès !");
+                            lesDvd = controller.GetAllDvd();
+                            RemplirDvdListeComplete();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Erreur lors de la suppression du DVD.");
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Impossible de supprimer ce DVD car des exemplaires ou commandes y sont associés.");
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Veuillez sélectionner un DVD à supprimer.");
+            }
+        }
+
+
+        #endregion
+
         #region Onglet Revues
         private readonly BindingSource bdgRevuesListe = new BindingSource();
         private List<Revue> lesRevues = new List<Revue>();
@@ -1148,6 +1302,166 @@ namespace MediaTekDocuments.view
         }
         #endregion
 
+        #region Gestion Revues - Ajout / Modification / Suppression
+        private void btnAjouterRevues_Click(object sender, EventArgs e)
+        {
+            // Récupérer les dictionnaires pour remplir les ComboBox
+            Dictionary<string, string> genres = controller.GetAllGenres().ToDictionary(g => g.Id, g => g.Libelle);
+            Dictionary<string, string> publics = controller.GetAllPublics().ToDictionary(p => p.Id, p => p.Libelle);
+            Dictionary<string, string> rayons = controller.GetAllRayons().ToDictionary(r => r.Id, r => r.Libelle);
+
+            // Ouvrir le formulaire d'ajout de revue en lui passant les dictionnaires
+            FrmAjoutRevue frmAjout = new FrmAjoutRevue(genres, publics, rayons);
+
+            if (frmAjout.ShowDialog() == DialogResult.OK)
+            {
+                // Convertir le délai de mise à dispo en entier
+                if (!int.TryParse(frmAjout.DelaiMiseADispo, out int delai))
+                {
+                    MessageBox.Show("Veuillez entrer un délai de mise à disposition valide.");
+                    return;
+                }
+
+                // Créer l'objet Revue à partir des valeurs saisies
+                Revue nouvelleRevue = new Revue(
+                    frmAjout.Id,
+                    frmAjout.Titre,
+                    frmAjout.Image,
+                    frmAjout.IdGenre,
+                    genres[frmAjout.IdGenre],
+                    frmAjout.IdPublic,
+                    publics[frmAjout.IdPublic],
+                    frmAjout.IdRayon,
+                    rayons[frmAjout.IdRayon],
+                    frmAjout.Periodicite,
+                    delai
+                );
+
+                // Appel à l'API via le contrôleur
+                if (controller.AjouterRevue(nouvelleRevue))
+                {
+                    MessageBox.Show("Revue ajoutée avec succès !");
+                    lesRevues = controller.GetAllRevues();
+                    RemplirRevuesListeComplete();
+                }
+                else
+                {
+                    MessageBox.Show("Erreur lors de l'ajout de la revue.");
+                }
+            }
+        }
+
+
+        private void btnModifierRevues_Click(object sender, EventArgs e)
+        {
+            if (dgvRevuesListe.CurrentCell != null)
+            {
+                // Récupérer la revue sélectionnée
+                Revue revueSelectionnee = (Revue)bdgRevuesListe.List[bdgRevuesListe.Position];
+
+                // Récupérer les dictionnaires pour remplir les ComboBox
+                Dictionary<string, string> genres = controller.GetAllGenres().ToDictionary(g => g.Id, g => g.Libelle);
+                Dictionary<string, string> publics = controller.GetAllPublics().ToDictionary(p => p.Id, p => p.Libelle);
+                Dictionary<string, string> rayons = controller.GetAllRayons().ToDictionary(r => r.Id, r => r.Libelle);
+
+                // Ouvrir le formulaire de modification en pré-remplissant les champs
+                FrmAjoutRevue frmModifier = new FrmAjoutRevue(genres, publics, rayons);
+                frmModifier.Id = revueSelectionnee.Id;
+                frmModifier.Titre = revueSelectionnee.Titre;
+                frmModifier.Image = revueSelectionnee.Image;
+                frmModifier.Periodicite = revueSelectionnee.Periodicite;
+                frmModifier.DelaiMiseADispo = revueSelectionnee.DelaiMiseADispo.ToString();
+                frmModifier.IdGenre = revueSelectionnee.IdGenre;
+                frmModifier.IdPublic = revueSelectionnee.IdPublic;
+                frmModifier.IdRayon = revueSelectionnee.IdRayon;
+
+                if (frmModifier.ShowDialog() == DialogResult.OK)
+                {
+                    // Convertir le délai en entier
+                    if (!int.TryParse(frmModifier.DelaiMiseADispo, out int delai))
+                    {
+                        MessageBox.Show("Veuillez entrer un délai de mise à disposition valide.");
+                        return;
+                    }
+
+                    // Créer un objet Revue avec les nouvelles valeurs
+                    Revue revueModifiee = new Revue(
+                        frmModifier.Id,
+                        frmModifier.Titre,
+                        frmModifier.Image,
+                        frmModifier.IdGenre,
+                        genres[frmModifier.IdGenre],
+                        frmModifier.IdPublic,
+                        publics[frmModifier.IdPublic],
+                        frmModifier.IdRayon,
+                        rayons[frmModifier.IdRayon],
+                        frmModifier.Periodicite,
+                        delai
+                    );
+
+                    // Appeler la méthode de modification
+                    if (controller.ModifierRevue(revueModifiee))
+                    {
+                        MessageBox.Show("Revue modifiée avec succès !");
+                        lesRevues = controller.GetAllRevues();
+                        RemplirRevuesListeComplete();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Erreur lors de la modification de la revue.");
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Veuillez sélectionner une revue à modifier.");
+            }
+        }
+
+
+        private void btnSupprimerRevues_Click(object sender, EventArgs e)
+        {
+            if (dgvRevuesListe.CurrentCell != null)
+            {
+                Revue revueSelectionnee = (Revue)bdgRevuesListe.List[bdgRevuesListe.Position];
+
+                DialogResult confirmation = MessageBox.Show(
+                    $"Voulez-vous vraiment supprimer la revue : {revueSelectionnee.Titre} ?",
+                    "Confirmation de suppression",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning
+                );
+
+                if (confirmation == DialogResult.Yes)
+                {
+                    // Vérifier si la revue peut être supprimée
+                    if (controller.PeutSupprimerDocument(revueSelectionnee.Id))
+                    {
+                        if (controller.SupprimerRevue(revueSelectionnee.Id))
+                        {
+                            MessageBox.Show("Revue supprimée avec succès !");
+                            lesRevues = controller.GetAllRevues();
+                            RemplirRevuesListeComplete();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Erreur lors de la suppression de la revue.");
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Impossible de supprimer cette revue car elle a des exemplaires ou commandes associés.");
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Veuillez sélectionner une revue à supprimer.");
+            }
+        }
+
+        #endregion
+
         #region Onglet Paarutions
         private readonly BindingSource bdgExemplairesListe = new BindingSource();
         private List<Exemplaire> lesExemplaires = new List<Exemplaire>();
@@ -1398,5 +1712,7 @@ namespace MediaTekDocuments.view
             }
         }
         #endregion
+
+
     }
 }
