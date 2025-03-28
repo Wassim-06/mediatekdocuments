@@ -45,16 +45,61 @@ namespace MediaTekDocuments.view
 
 
         // Propriétés pour accéder aux champs saisis
-        public string Id => txbId.Text;
-        public string Titre => txbTitre.Text;
-        public string Auteur => txbAuteur.Text;
-        public string Collection => txbCollection.Text;
-        public string Isbn => txbIsbn.Text;
-        public string Image => txbImage.Text;
+        public string Id
+        {
+            get { return txbId.Text; }
+            set { txbId.Text = value; }
+        }
 
-        public string IdGenre => ((KeyValuePair<string, string>)cbxGenre.SelectedItem).Key;
-        public string IdPublic => ((KeyValuePair<string, string>)cbxPublic.SelectedItem).Key;
-        public string IdRayon => ((KeyValuePair<string, string>)cbxRayon.SelectedItem).Key;
+        public string Titre
+        {
+            get { return txbTitre.Text; }
+            set { txbTitre.Text = value; }
+        }
+
+        public string Auteur
+        {
+            get { return txbAuteur.Text; }
+            set { txbAuteur.Text = value; }
+        }
+
+        public string Collection
+        {
+            get { return txbCollection.Text; }
+            set { txbCollection.Text = value; }
+        }
+
+        public string Isbn
+        {
+            get { return txbIsbn.Text; }
+            set { txbIsbn.Text = value; }
+        }
+
+        public string Image
+        {
+            get { return txbImage.Text; }
+            set { txbImage.Text = value; }
+        }
+
+
+        public string IdGenre
+        {
+            get { return ((KeyValuePair<string, string>)cbxGenre.SelectedItem).Key; }
+            set { cbxGenre.SelectedValue = value; }
+        }
+
+        public string IdPublic
+        {
+            get { return ((KeyValuePair<string, string>)cbxPublic.SelectedItem).Key; }
+            set { cbxPublic.SelectedValue = value; }
+        }
+
+        public string IdRayon
+        {
+            get { return ((KeyValuePair<string, string>)cbxRayon.SelectedItem).Key; }
+            set { cbxRayon.SelectedValue = value; }
+        }
+
 
         // Bouton Valider
         private void btnValider_Click(object sender, EventArgs e)

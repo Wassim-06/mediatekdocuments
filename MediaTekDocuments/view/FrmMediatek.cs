@@ -415,8 +415,68 @@ namespace MediaTekDocuments.view
 
         private void btnModifierLivre_Click(object sender, EventArgs e)
         {
-            // À faire
+            if (dgvLivresListe.CurrentCell != null)
+            {
+                // Récupérer le livre sélectionné
+                Livre livreSelectionne = (Livre)bdgLivresListe.List[bdgLivresListe.Position];
+
+                // Ouvrir la modale de modification (ici, on réutilise FrmAjoutLivre)
+                // Vous pouvez adapter FrmAjoutLivre pour qu'il puisse fonctionner en mode édition.
+                FrmAjoutLivre frmModifier = new FrmAjoutLivre(
+                    controller.GetAllGenres().ToDictionary(g => g.Id, g => g.Libelle),
+                    controller.GetAllPublics().ToDictionary(p => p.Id, p => p.Libelle),
+                    controller.GetAllRayons().ToDictionary(r => r.Id, r => r.Libelle)
+                );
+
+                // Pré-remplir la modale avec les valeurs du livre sélectionné
+                frmModifier.Id = livreSelectionne.Id;
+                frmModifier.Titre = livreSelectionne.Titre;
+                frmModifier.Image = livreSelectionne.Image;
+                frmModifier.Isbn = livreSelectionne.Isbn;
+                frmModifier.Auteur = livreSelectionne.Auteur;
+                frmModifier.Collection = livreSelectionne.Collection;
+                frmModifier.IdGenre = livreSelectionne.IdGenre;
+                frmModifier.IdPublic = livreSelectionne.IdPublic;
+                frmModifier.IdRayon = livreSelectionne.IdRayon;
+
+                if (frmModifier.ShowDialog() == DialogResult.OK)
+                {
+                    // Création de l'objet livre avec les valeurs modifiées
+                    Livre livreModifie = new Livre(
+                        frmModifier.Id,
+                        frmModifier.Titre,
+                        frmModifier.Image,
+                        frmModifier.Isbn,
+                        frmModifier.Auteur,
+                        frmModifier.Collection,
+                        frmModifier.IdGenre,
+                        // Vous pouvez récupérer le libellé associé si nécessaire, par exemple :
+                        controller.GetAllGenres().FirstOrDefault(g => g.Id == frmModifier.IdGenre)?.Libelle,
+                        frmModifier.IdPublic,
+                        controller.GetAllPublics().FirstOrDefault(p => p.Id == frmModifier.IdPublic)?.Libelle,
+                        frmModifier.IdRayon,
+                        controller.GetAllRayons().FirstOrDefault(r => r.Id == frmModifier.IdRayon)?.Libelle
+                    );
+
+                    // Appel à la méthode de modification
+                    if (controller.ModifierLivre(livreModifie))
+                    {
+                        MessageBox.Show("Livre modifié avec succès !");
+                        lesLivres = controller.GetAllLivres();
+                        RemplirLivresListeComplete();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Erreur lors de la modification du livre.");
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Veuillez sélectionner un livre à modifier.");
+            }
         }
+
 
         private void btnSupprimerLivre_Click(object sender, EventArgs e)
         {

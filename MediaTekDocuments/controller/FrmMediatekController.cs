@@ -177,11 +177,46 @@ namespace MediaTekDocuments.controller
             return true;
         }
 
+        public bool ModifierLivre(Livre livre)
+        {
+            // Préparer les données pour la table "document"
+            var docData = new Dictionary<string, string>()
+            {
+                { "id", livre.Id },
+                { "titre", livre.Titre },
+                { "image", livre.Image },
+                { "idGenre", livre.IdGenre },
+                { "idPublic", livre.IdPublic },
+                { "idRayon", livre.IdRayon }
+            };
+                    string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
 
+                    // Préparer les données pour la table "livres_dvd"
+                    var livreDvdData = new Dictionary<string, string>()
+            {
+                { "id", livre.Id }
+            };
+                    string livreDvdParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(livreDvdData))}";
 
+                    // Préparer les données pour la table "livre"
+                    var livreData = new Dictionary<string, string>()
+            {
+                { "id", livre.Id },
+                { "isbn", livre.Isbn },
+                { "auteur", livre.Auteur },
+                { "collection", livre.Collection }
+            };
+            string livreParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(livreData))}";
 
+            // Appel à l'API en utilisant PUT
+            JObject responseDoc = api.RecupDistant("PUT", "document/" + livre.Id, docParams);
+            JObject responseLivreDvd = api.RecupDistant("PUT", "livres_dvd/" + livre.Id, livreDvdParams);
+            JObject responseLivre = api.RecupDistant("PUT", "livre/" + livre.Id, livreParams);
 
-
+            return responseDoc?["code"]?.ToString() == "200" &&
+                   responseLivreDvd?["code"]?.ToString() == "200" &&
+                   responseLivre?["code"]?.ToString() == "200";
+        }
 
     }
 }
