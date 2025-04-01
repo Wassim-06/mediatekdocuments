@@ -415,5 +415,32 @@ namespace MediaTekDocuments.controller
             return true;
         }
 
+
+        public List<CommandeDocument> GetCommandesByLivre(string idLivre)
+        {
+            return access.GetCommandesByLivre(idLivre);
+        }
+
+        public bool AjouterCommande(CommandeDocument commande)
+        {
+            return access.AjouterCommande(commande);
+        }
+
+        public bool ModifierSuiviCommande(CommandeDocument commande, int nouvelIdSuivi)
+        {
+            return access.ModifierSuiviCommande(commande, nouvelIdSuivi);
+        }
+
+        public bool SupprimerCommande(string idCommande)
+        {
+            return access.SupprimerCommande(idCommande);
+        }
+
+        public List<CommandeDocument> GetCommandesByDvd(string idDvd)
+        {
+            return access.GetCommandesByDvd(idDvd);
+        }
+
+
     }
 }

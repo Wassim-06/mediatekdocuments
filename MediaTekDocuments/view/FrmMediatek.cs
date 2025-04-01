@@ -20,6 +20,8 @@ namespace MediaTekDocuments.view
         private readonly BindingSource bdgGenres = new BindingSource();
         private readonly BindingSource bdgPublics = new BindingSource();
         private readonly BindingSource bdgRayons = new BindingSource();
+        private readonly BindingSource bdgCommandesLivre = new BindingSource();
+        private readonly BindingSource bdgCommandesDvd = new BindingSource();
 
         /// <summary>
         /// Constructeur : création du contrôleur lié à ce formulaire
@@ -1711,8 +1713,331 @@ namespace MediaTekDocuments.view
                 pcbReceptionExemplaireRevueImage.Image = null;
             }
         }
+
         #endregion
 
+        #region Onglet CommandesLivres
+        private void btnRechercherLivre_Click(object sender, EventArgs e)
+        {
+            string idLivre = txbNumLivreCommande.Text.Trim();
+            if (string.IsNullOrWhiteSpace(idLivre))
+            {
+                MessageBox.Show("Veuillez saisir un numéro de livre.");
+                return;
+            }
+
+            Livre livre = lesLivres.Find(l => l.Id == idLivre);
+
+            if (livre != null)
+            {
+                lblTitreLivreCommande.Text = $"Titre : {livre.Titre}";
+                // Appeler la méthode pour afficher les commandes associées (on la fera après)
+                AfficherCommandesLivre(idLivre);
+            }
+            else
+            {
+                lblTitreLivreCommande.Text = "📕 Livre introuvable.";
+                dgvCommandesLivre.DataSource = null;
+            }
+        }
+
+        private void AfficherCommandesLivre(string idLivre)
+        {
+            List<CommandeDocument> toutesLesCommandes = controller.GetCommandesByLivre(idLivre);
+
+            // 🔎 Nouveau : filtrer uniquement celles liées au livre (sécurité max)
+            List<CommandeDocument> commandesFiltrees = toutesLesCommandes
+                .Where(cmd => cmd.IdLivreDvd == idLivre)
+                .ToList();
+
+            commandesFiltrees.Sort((x, y) => y.DateCommande.CompareTo(x.DateCommande));
+            bdgCommandesLivre.DataSource = null;
+            dgvCommandesLivre.DataSource = null;
+            bdgCommandesLivre.DataSource = commandesFiltrees;
+            dgvCommandesLivre.DataSource = bdgCommandesLivre;
+        }
+
+
+
+        private void btnAjouterCommande_Click(object sender, EventArgs e)
+        {
+            string idLivre = txbNumLivreCommande.Text.Trim();
+
+            if (string.IsNullOrEmpty(idLivre))
+            {
+                MessageBox.Show("Veuillez saisir un numéro de livre.");
+                return;
+            }
+
+            // Vérifie si le livre existe
+            Livre livre = lesLivres.FirstOrDefault(l => l.Id == idLivre);
+            if (livre == null)
+            {
+                MessageBox.Show("Livre introuvable.");
+                return;
+            }
+
+            // Vérification des champs
+            if (!decimal.TryParse(txbMontantCommande.Text, out decimal montant) || montant <= 0)
+            {
+                MessageBox.Show("Montant invalide.");
+                return;
+            }
+
+            if (!int.TryParse(txbNbExemplairesCommande.Text, out int nbExemplaires) || nbExemplaires <= 0)
+            {
+                MessageBox.Show("Nombre d'exemplaires invalide.");
+                return;
+            }
+
+            DateTime dateCommande = dtpDateCommande.Value;
+            double montantDouble = (double)montant;
+
+            // Création de la commande :
+            // - Passez une chaîne vide pour l'ID afin que la base l'auto-incrémente.
+            // - Passez idLivre dans la propriété IdLivreDvd pour enregistrer l'ID du livre.
+            CommandeDocument commande = new CommandeDocument(
+                "",               // ID vide pour auto-incrémentation
+                dateCommande,
+                montantDouble,
+                nbExemplaires,
+                1,
+                "en cours",
+                idLivre         // Cet argument sera affecté à la propriété IdLivreDvd
+            );
+
+            if (controller.AjouterCommande(commande))
+            {
+                MessageBox.Show("Commande ajoutée !");
+                // Recharger la liste
+                bdgCommandesLivre.DataSource = controller.GetCommandesByLivre(idLivre);
+            }
+            else
+            {
+                MessageBox.Show("Erreur lors de l’ajout de la commande.");
+            }
+        }
+
+
+        private void btnModifierSuivi_Click(object sender, EventArgs e)
+        {
+            if (dgvCommandesLivre.SelectedRows.Count > 0)
+            {
+                CommandeDocument cmd = (CommandeDocument)bdgCommandesLivre[dgvCommandesLivre.SelectedRows[0].Index];
+
+                // Ouvrir une boîte de dialogue pour modifier le suivi
+                FrmModifierSuivi frm = new FrmModifierSuivi(cmd);
+                if (frm.ShowDialog() == DialogResult.OK)
+                {
+                    // Récupérer le nouveau suivi choisi
+                    int nouvelIdSuivi = frm.NouvelIdSuivi;
+
+                    if (controller.ModifierSuiviCommande(cmd, nouvelIdSuivi))
+                    {
+                        MessageBox.Show("Étape de suivi modifiée !");
+                        AfficherCommandesLivre(cmd.IdLivreDvd); // Refresh
+                    }
+                    else
+                    {
+                        MessageBox.Show("Modification non autorisée selon les règles de gestion.");
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Veuillez sélectionner une commande.");
+            }
+        }
+
+        private void btnSupprimerCommande_Click(object sender, EventArgs e)
+        {
+            if (dgvCommandesLivre.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Veuillez sélectionner une commande à supprimer.");
+                return;
+            }
+
+            CommandeDocument cmd = (CommandeDocument)bdgCommandesLivre[dgvCommandesLivre.SelectedRows[0].Index];
+
+            if (cmd.LibelleSuivi == "Livrée" || cmd.LibelleSuivi == "Réglée")
+            {
+                MessageBox.Show("Impossible de supprimer une commande livrée ou réglée.");
+                return;
+            }
+
+            DialogResult confirm = MessageBox.Show("Confirmer la suppression de la commande ?", "Confirmation", MessageBoxButtons.YesNo);
+            if (confirm == DialogResult.Yes)
+            {
+                if (controller.SupprimerCommande(cmd.Id))
+                {
+                    MessageBox.Show("Commande supprimée.");
+                    AfficherCommandesLivre(cmd.IdLivreDvd); // Refresh
+                }
+                else
+                {
+                    MessageBox.Show("Erreur lors de la suppression.");
+                }
+            }
+        }
+
+        #endregion
+
+        #region Onglet CommandesDVD
+        private void btnRechercherDvd_Click(object sender, EventArgs e)
+        {
+            string idDvd = txbNumDvdCommande.Text.Trim();
+            if (string.IsNullOrWhiteSpace(idDvd))
+            {
+                MessageBox.Show("Veuillez saisir un numéro de DVD.");
+                return;
+            }
+
+            Dvd dvd = lesDvd.Find(d => d.Id == idDvd);
+
+            if (dvd != null)
+            {
+                lblTitreDvdCommande.Text = $"Titre : {dvd.Titre}";
+                AfficherCommandesDvd(idDvd);
+            }
+            else
+            {
+                lblTitreDvdCommande.Text = "📀 DVD introuvable.";
+                dgvCommandesDvd.DataSource = null;
+            }
+        }
+
+        private void AfficherCommandesDvd(string idDvd)
+        {
+            List<CommandeDocument> toutesLesCommandes = controller.GetCommandesByDvd(idDvd);
+
+            List<CommandeDocument> commandesFiltrees = toutesLesCommandes
+                .Where(cmd => cmd.IdLivreDvd == idDvd)
+                .ToList();
+
+            commandesFiltrees.Sort((x, y) => y.DateCommande.CompareTo(x.DateCommande));
+            bdgCommandesDvd.DataSource = null;
+            dgvCommandesDvd.DataSource = null;
+            bdgCommandesDvd.DataSource = commandesFiltrees;
+            dgvCommandesDvd.DataSource = bdgCommandesDvd;
+        }
+
+        private void btnAjouterCommandeDvd_Click(object sender, EventArgs e)
+        {
+            string idDvd = txbNumDvdCommande.Text.Trim();
+
+            if (string.IsNullOrEmpty(idDvd))
+            {
+                MessageBox.Show("Veuillez saisir un numéro de DVD.");
+                return;
+            }
+
+            // Vérifie si le DVD existe
+            Dvd dvd = lesDvd.FirstOrDefault(d => d.Id == idDvd);
+            if (dvd == null)
+            {
+                MessageBox.Show("DVD introuvable.");
+                return;
+            }
+
+            // Vérification des champs
+            if (!decimal.TryParse(txbMontantCommandeDvd.Text, out decimal montant) || montant <= 0)
+            {
+                MessageBox.Show("Montant invalide.");
+                return;
+            }
+
+            if (!int.TryParse(txbNbExemplairesCommandeDvd.Text, out int nbExemplaires) || nbExemplaires <= 0)
+            {
+                MessageBox.Show("Nombre d'exemplaires invalide.");
+                return;
+            }
+
+            DateTime dateCommande = dtpDateCommandeDvd.Value;
+            double montantDouble = (double)montant;
+
+            // Création de la commande
+            CommandeDocument commande = new CommandeDocument(
+                "",               // ID vide → auto-incrément
+                dateCommande,
+                montantDouble,
+                nbExemplaires,
+                1,                // Suivi "en cours"
+                "En cours",
+                idDvd
+            );
+
+            if (controller.AjouterCommande(commande))
+            {
+                MessageBox.Show("Commande DVD ajoutée !");
+                bdgCommandesDvd.DataSource = controller.GetCommandesByDvd(idDvd);
+            }
+            else
+            {
+                MessageBox.Show("Erreur lors de l’ajout de la commande DVD.");
+            }
+        }
+        private void btnModifierSuiviCommandeDvd_Click(object sender, EventArgs e)
+        {
+            if (dgvCommandesDvd.SelectedRows.Count > 0)
+            {
+                CommandeDocument cmd = (CommandeDocument)bdgCommandesDvd[dgvCommandesDvd.SelectedRows[0].Index];
+
+                // Ouvrir la fenêtre de modification de suivi
+                FrmModifierSuivi frm = new FrmModifierSuivi(cmd);
+                if (frm.ShowDialog() == DialogResult.OK)
+                {
+                    int nouvelIdSuivi = frm.NouvelIdSuivi;
+
+                    if (controller.ModifierSuiviCommande(cmd, nouvelIdSuivi))
+                    {
+                        MessageBox.Show("Étape de suivi modifiée !");
+                        AfficherCommandesDvd(cmd.IdLivreDvd); // Recharge les commandes liées au DVD
+                    }
+                    else
+                    {
+                        MessageBox.Show("Modification non autorisée selon les règles de gestion.");
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Veuillez sélectionner une commande.");
+            }
+        }
+
+
+        private void btnSupprimerCommandeDvd_Click(object sender, EventArgs e)
+        {
+            if (dgvCommandesDvd.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Veuillez sélectionner une commande à supprimer.");
+                return;
+            }
+
+            CommandeDocument cmd = (CommandeDocument)bdgCommandesDvd[dgvCommandesDvd.SelectedRows[0].Index];
+
+            if (cmd.LibelleSuivi == "Livrée" || cmd.LibelleSuivi == "Réglée")
+            {
+                MessageBox.Show("Impossible de supprimer une commande livrée ou réglée.");
+                return;
+            }
+
+            DialogResult confirm = MessageBox.Show("Confirmer la suppression de la commande ?", "Confirmation", MessageBoxButtons.YesNo);
+            if (confirm == DialogResult.Yes)
+            {
+                if (controller.SupprimerCommande(cmd.Id))
+                {
+                    MessageBox.Show("Commande supprimée.");
+                    AfficherCommandesDvd(cmd.IdLivreDvd); // Recharge les commandes du DVD
+                }
+                else
+                {
+                    MessageBox.Show("Erreur lors de la suppression.");
+                }
+            }
+        }
+
+        #endregion
 
     }
 }

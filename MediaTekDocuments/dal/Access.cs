@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using System.Configuration;
 using System.Linq;
 
+
 namespace MediaTekDocuments.dal
 {
     /// <summary>
@@ -263,6 +264,205 @@ namespace MediaTekDocuments.dal
             List<Exemplaire> exemplaires = TraitementRecup<Exemplaire>(GET, message, null);
             return exemplaires.Count == 0;
         }
+
+
+        public List<CommandeDocument> GetCommandesByLivre(string idLivre)
+        {
+            // 1. Filtrer les CommandeDocument par idLivreDvd
+            string jsonIdLivre = convertToJson("idLivreDvd", idLivre);
+            string url = "commandedocument";
+            string paramCommandes = $"champs={Uri.EscapeDataString(jsonIdLivre)}";
+            List<CommandeDocument> commandes = TraitementRecup<CommandeDocument>("GET", url, paramCommandes);
+
+            // 2. Récupérer toutes les commandes (avec date et montant)
+            List<Commande> toutesLesCommandes = TraitementRecup<Commande>("GET", "commande", null);
+
+            // ✅ Dictionnaire de correspondance IdSuivi -> Libellé
+            Dictionary<int, string> libellesSuivi = new Dictionary<int, string>
+            {
+                { 1, "En cours" },
+                { 2, "Relancée" },
+                { 3, "Livrée" },
+                { 4, "Réglée" }
+            };
+
+            // 3. Associer les infos à chaque commande
+            foreach (CommandeDocument cmdDoc in commandes)
+            {
+                // Ajouter Date + Montant
+                Commande cmdInfo = toutesLesCommandes.Find(c => c.Id == cmdDoc.Id);
+                if (cmdInfo != null)
+                {
+                    cmdDoc.DateCommande = cmdInfo.DateCommande;
+                    cmdDoc.Montant = cmdInfo.Montant;
+                }
+
+                // Ajouter le libellé de suivi à partir du dictionnaire
+                if (libellesSuivi.ContainsKey(cmdDoc.IdSuivi))
+                {
+                    cmdDoc.LibelleSuivi = libellesSuivi[cmdDoc.IdSuivi];
+                }
+                else
+                {
+                    cmdDoc.LibelleSuivi = "Inconnu";
+                }
+            }
+
+            return commandes;
+        }
+
+
+
+
+
+
+
+        public bool AjouterCommande(CommandeDocument commande)
+        {
+            ApiRest api = ApiRest.GetInstance("http://localhost/rest_mediatekdocuments/", "admin:adminpwd");
+
+            // 1. Insertion dans la table 'commande' sans envoyer l'ID
+            string messageCommande = "commande";
+            string jsonCommande = JsonConvert.SerializeObject(new
+            {
+                dateCommande = commande.DateCommande.ToString("yyyy-MM-dd"),
+                montant = commande.Montant
+            });
+            string paramCommande = $"champs={Uri.EscapeDataString(jsonCommande)}";
+            JObject responseCommande = api.RecupDistant("POST", messageCommande, paramCommande);
+            if (responseCommande?["code"]?.ToString() != "200")
+            {
+                return false;
+            }
+
+            // 2. Récupérer l'ID de la dernière commande (car il n'est pas retourné dans la réponse du POST)
+            string newId = GetLastCommandeId();
+            if (string.IsNullOrEmpty(newId))
+            {
+                return false;
+            }
+
+            // On met à jour l'ID de l'objet commande
+            commande.Id = newId;
+
+            // 3. Insertion dans la table 'commandedocument'
+            string messageCommandeDocument = "commandedocument";
+            string jsonCommandeDocument = JsonConvert.SerializeObject(new
+            {
+                id = commande.Id,
+                nbExemplaire = commande.NbExemplaire,
+                idLivreDvd = commande.IdLivreDvd,
+                idSuivi = commande.IdSuivi
+            });
+            string paramCommandeDocument = $"champs={Uri.EscapeDataString(jsonCommandeDocument)}";
+            JObject responseCommandeDocument = api.RecupDistant("POST", messageCommandeDocument, paramCommandeDocument);
+
+            return responseCommandeDocument?["code"]?.ToString() == "200";
+        }
+
+
+        public string GetLastCommandeId()
+        {
+            ApiRest api = ApiRest.GetInstance("http://localhost/rest_mediatekdocuments/", "admin:adminpwd");
+            JObject response = api.RecupDistant("GET", "commande", null);
+
+            if (response?["code"]?.ToString() == "200")
+            {
+                JArray resultArray = (JArray)response["result"];
+                if (resultArray != null && resultArray.Count > 0)
+                {
+                    // Dernière commande (en supposant que l'API retourne dans l'ordre d'insertion)
+                    JObject lastCommande = (JObject)resultArray[resultArray.Count - 1];
+                    return lastCommande["id"]?.ToString();
+                }
+            }
+
+            return null;
+        }
+
+        public bool ModifierSuiviCommande(CommandeDocument commande, int nouvelIdSuivi)
+        {
+            Console.WriteLine("Ancien suivi : " + commande.IdSuivi);
+            Console.WriteLine("Nouveau suivi : " + nouvelIdSuivi);
+
+            // ✅ Règle 1 : une commande livrée ou réglée ne peut pas revenir à un état précédent
+            if ((commande.IdSuivi == 3 || commande.IdSuivi == 4) && nouvelIdSuivi < commande.IdSuivi)
+            {
+                return false;
+            }
+
+            // ✅ Règle 2 : une commande ne peut pas passer à "réglée" sans être livrée
+            if (nouvelIdSuivi == 4 && commande.IdSuivi != 3)
+            {
+                return false;
+            }
+
+            // ✅ Préparer le corps de la requête (le champ à modifier)
+            string jsonUpdate = JsonConvert.SerializeObject(new
+            {
+                idSuivi = nouvelIdSuivi
+            });
+
+            string param = $"champs={Uri.EscapeDataString(jsonUpdate)}";
+
+            // ✅ L’ID doit être dans l’URL maintenant
+            string url = $"commandedocument/{commande.Id}";
+
+            JObject response = api.RecupDistant("PUT", url, param);
+            Console.WriteLine("Requête PUT envoyée à l'API : " + url);
+            Console.WriteLine("Body : " + param);
+            Console.WriteLine("Code retour de l'API : " + response?["code"]);
+
+            return response?["code"]?.ToString() == "200";
+        }
+
+        public bool SupprimerCommande(string idCommande)
+        {
+            string json = JsonConvert.SerializeObject(new { id = idCommande });
+            string param = $"champs={Uri.EscapeDataString(json)}";
+            JObject response = api.RecupDistant("DELETE", "commandedocument", param);
+
+            Console.WriteLine("Suppression commande id : " + idCommande);
+            return response?["code"]?.ToString() == "200";
+        }
+
+
+
+
+        public List<CommandeDocument> GetCommandesByDvd(string idDvd)
+        {
+            string jsonIdDvd = convertToJson("idLivreDvd", idDvd);
+            string url = "commandedocument";
+            string paramCommandes = $"champs={Uri.EscapeDataString(jsonIdDvd)}";
+            List<CommandeDocument> commandes = TraitementRecup<CommandeDocument>("GET", url, paramCommandes);
+
+            List<Commande> toutesLesCommandes = TraitementRecup<Commande>("GET", "commande", null);
+
+            Dictionary<int, string> libellesSuivi = new Dictionary<int, string>
+            {
+                { 1, "En cours" },
+                { 2, "Relancée" },
+                { 3, "Livrée" },
+                { 4, "Réglée" }
+            };
+
+            foreach (CommandeDocument cmdDoc in commandes)
+            {
+                Commande cmdInfo = toutesLesCommandes.Find(c => c.Id == cmdDoc.Id);
+                if (cmdInfo != null)
+                {
+                    cmdDoc.DateCommande = cmdInfo.DateCommande;
+                    cmdDoc.Montant = cmdInfo.Montant;
+                }
+
+                cmdDoc.LibelleSuivi = libellesSuivi.ContainsKey(cmdDoc.IdSuivi)
+                    ? libellesSuivi[cmdDoc.IdSuivi]
+                    : "Inconnu";
+            }
+
+            return commandes;
+        }
+
 
     }
 }
