@@ -441,6 +441,29 @@ namespace MediaTekDocuments.controller
             return access.GetCommandesByDvd(idDvd);
         }
 
+        public List<Abonnement> GetAbonnementsByRevue(string idRevue)
+        {
+            return access.GetAbonnementsByRevue(idRevue);
+        }
+
+        public bool AjouterAbonnement(Abonnement abonnement)
+        {
+            return access.AjouterAbonnement(abonnement);
+        }
+        public bool SupprimerAbonnement(string idAbonnement)
+        {
+            return access.SupprimerAbonnement(idAbonnement);
+        }
+
+        public List<Exemplaire> GetExemplairesByRevue(string idRevue)
+        {
+            return access.GetExemplairesByRevue(idRevue);
+        }
+
+        public List<Abonnement> GetAbonnementsEcheantDans30Jours()
+        {
+            return access.GetAbonnementsEcheantDans30Jours();
+        }
 
     }
 }

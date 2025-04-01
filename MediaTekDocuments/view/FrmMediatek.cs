@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
 using System.IO;
+using MediaTekDocuments.utils;
+
 
 namespace MediaTekDocuments.view
 
@@ -22,6 +24,7 @@ namespace MediaTekDocuments.view
         private readonly BindingSource bdgRayons = new BindingSource();
         private readonly BindingSource bdgCommandesLivre = new BindingSource();
         private readonly BindingSource bdgCommandesDvd = new BindingSource();
+        private readonly BindingSource bdgCommandesRevue = new BindingSource();
 
         /// <summary>
         /// Constructeur : création du contrôleur lié à ce formulaire
@@ -30,6 +33,35 @@ namespace MediaTekDocuments.view
         {
             InitializeComponent();
             this.controller = new FrmMediatekController();
+
+            lesRevues = controller.GetAllRevues();
+            // Récupérer la liste des abonnements qui se terminent sous 30 jours
+            List<Abonnement> abonnementsEcheant = controller.GetAbonnementsEcheantDans30Jours();
+
+            // Si la liste est non vide, on affiche une petite fenêtre d’alerte
+            if (abonnementsEcheant.Count > 0)
+            {
+                // Construire le message : titre + date de fin
+                // => Vous pouvez recouper ab.IdRevue avec lesRevues pour obtenir titre
+                List<string> lignes = new List<string>();
+                foreach (Abonnement ab in abonnementsEcheant)
+                {
+                    // Revue correspondante
+                    Revue revue = lesRevues.Find(r => r.Id == ab.IdRevue);
+                    string titre = (revue != null) ? revue.Titre : "Titre inconnu";
+
+                    lignes.Add($"- {titre} : fin le {ab.DateFinAbonnement:dd/MM/yyyy}");
+                }
+
+                string message = "Abonnements se terminant dans moins de 30 jours :\n\n" +
+                                 string.Join("\n", lignes);
+
+                MessageBox.Show(message,
+                    "Alerte - Échéances Abonnements",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+
         }
 
         /// <summary>
@@ -2038,6 +2070,146 @@ namespace MediaTekDocuments.view
         }
 
         #endregion
+
+        #region CommandesRevues
+        private void btnRechercherRevueCommande_Click(object sender, EventArgs e)
+        {
+            string idRevue = txbNumRevueCommande.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(idRevue))
+            {
+                MessageBox.Show("Veuillez saisir un numéro de revue.");
+                return;
+            }
+
+            Revue revue = lesRevues.Find(r => r.Id == idRevue);
+
+            if (revue != null)
+            {
+                lblTitreRevueCommande.Text = $"Titre : {revue.Titre}";
+                AfficherAbonnementsRevue(idRevue);
+            }
+            else
+            {
+                lblTitreRevueCommande.Text = "📚 Revue introuvable.";
+                dgvCommandesRevue.DataSource = null;
+            }
+
+        }
+
+        private void AfficherAbonnementsRevue(string idRevue)
+        {
+            List<Abonnement> abonnements = controller.GetAbonnementsByRevue(idRevue);
+
+            List<Abonnement> abonnementsFiltres = abonnements
+                .Where(a => a.IdRevue == idRevue)
+                .OrderByDescending(a => a.DateCommande)
+                .ToList();
+
+            bdgCommandesRevue.DataSource = null;
+            dgvCommandesRevue.DataSource = null;
+
+            bdgCommandesRevue.DataSource = abonnementsFiltres;
+            dgvCommandesRevue.DataSource = bdgCommandesRevue;
+
+        }
+
+        private void btnAjouterAbonnement_Click(object sender, EventArgs e)
+        {
+            string idRevue = txbNumRevueCommande.Text.Trim();
+
+            if (string.IsNullOrEmpty(idRevue))
+            {
+                MessageBox.Show("Veuillez saisir un numéro de revue.");
+                return;
+            }
+
+            Revue revue = lesRevues.FirstOrDefault(r => r.Id == idRevue);
+            if (revue == null)
+            {
+                MessageBox.Show("Revue introuvable.");
+                return;
+            }
+
+            if (!decimal.TryParse(txbMontantCommandeRevue.Text, out decimal montant) || montant <= 0)
+            {
+                MessageBox.Show("Montant invalide.");
+                return;
+            }
+
+            DateTime dateCommande = dtpDateCommandeRevue.Value;
+            DateTime dateFin = dtpDateFinAbonnement.Value;
+            Console.WriteLine(dateCommande);
+            Console.WriteLine(dateFin);
+            if (dateFin <= dateCommande)
+            {
+                MessageBox.Show("La date de fin d'abonnement doit être postérieure à la date de commande.");
+                return;
+            }
+
+            Abonnement abonnement = new Abonnement(
+                "", // id vide
+                dateCommande,
+                dateFin,
+                (double)montant,
+                idRevue
+            );
+
+
+            if (controller.AjouterAbonnement(abonnement))
+            {
+                MessageBox.Show("Abonnement ajouté !");
+                AfficherAbonnementsRevue(idRevue); // Recharge la liste
+            }
+            else
+            {
+                MessageBox.Show("Erreur lors de l'ajout de l'abonnement.");
+            }
+
+        }
+
+        #endregion
+
+        private void btnSupprimerAbonnement_Click(object sender, EventArgs e)
+        {
+            if (dgvCommandesRevue.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Veuillez sélectionner un abonnement à supprimer.");
+                return;
+            }
+
+            Abonnement abonnement = (Abonnement)bdgCommandesRevue[dgvCommandesRevue.SelectedRows[0].Index];
+
+            // ✅ On demande d'abord la confirmation à l'utilisateur
+            DialogResult confirm = MessageBox.Show("Confirmer la suppression de l'abonnement ?", "Confirmation", MessageBoxButtons.YesNo);
+            if (confirm != DialogResult.Yes)
+            {
+                return;
+            }
+
+            // ✅ Ensuite on récupère les exemplaires (et on peut annuler la suppression si besoin)
+            List<Exemplaire> exemplaires = controller.GetExemplairesByRevue(abonnement.IdRevue);
+
+            foreach (var ex in exemplaires)
+            {
+                if (Utils.ParutionDansAbonnement(abonnement.DateCommande, abonnement.DateFinAbonnement, ex.DateAchat))
+                {
+                    MessageBox.Show("❌ Impossible de supprimer l’abonnement : des exemplaires sont liés à cette période.");
+                    return;
+                }
+            }
+
+            if (controller.SupprimerAbonnement(abonnement.Id))
+            {
+                MessageBox.Show("✅ Abonnement supprimé !");
+                AfficherAbonnementsRevue(abonnement.IdRevue);
+            }
+            else
+            {
+                MessageBox.Show("❌ Erreur lors de la suppression.");
+            }
+        }
+
 
     }
 }

@@ -463,6 +463,116 @@ namespace MediaTekDocuments.dal
             return commandes;
         }
 
+        public List<Abonnement> GetAbonnementsByRevue(string idRevue)
+        {
+            string jsonIdRevue = convertToJson("idRevue", idRevue);
+            string url = "abonnement";
+            string param = $"champs={Uri.EscapeDataString(jsonIdRevue)}";
+            List<Abonnement> abonnements = TraitementRecup<Abonnement>("GET", url, param);
+
+            List<Commande> commandes = TraitementRecup<Commande>("GET", "commande", null);
+
+            foreach (Abonnement ab in abonnements)
+            {
+                Commande cmd = commandes.Find(c => c.Id == ab.Id);
+                if (cmd != null)
+                {
+                    ab.DateCommande = cmd.DateCommande;
+                    ab.Montant = cmd.Montant;
+                }
+            }
+
+            return abonnements;
+        }
+
+        public bool AjouterAbonnement(Abonnement abonnement)
+        {
+            ApiRest api = ApiRest.GetInstance("http://localhost/rest_mediatekdocuments/", "admin:adminpwd");
+
+            // 1. Insertion dans la table 'commande'
+            string jsonCommande = JsonConvert.SerializeObject(new
+            {
+                dateCommande = abonnement.DateCommande.ToString("yyyy-MM-dd"),
+                montant = abonnement.Montant
+            });
+
+            string paramCommande = $"champs={Uri.EscapeDataString(jsonCommande)}";
+            JObject responseCommande = api.RecupDistant("POST", "commande", paramCommande);
+
+            if (responseCommande?["code"]?.ToString() != "200")
+                return false;
+
+            // 2. Récupérer l’ID de la commande insérée
+            string id = GetLastCommandeId();
+            if (string.IsNullOrEmpty(id)) return false;
+
+            // 3. Insertion dans la table 'abonnement'
+            string jsonAbonnement = JsonConvert.SerializeObject(new
+            {
+                id = id,
+                dateFinAbonnement = abonnement.DateFinAbonnement.ToString("yyyy-MM-dd"),
+                idRevue = abonnement.IdRevue
+            });
+
+            string paramAbonnement = $"champs={Uri.EscapeDataString(jsonAbonnement)}";
+            JObject responseAbonnement = api.RecupDistant("POST", "abonnement", paramAbonnement);
+
+            return responseAbonnement?["code"]?.ToString() == "200";
+        }
+
+        public bool SupprimerAbonnement(string idAbonnement)
+        {
+            string json = JsonConvert.SerializeObject(new { id = idAbonnement });
+            string param = $"champs={Uri.EscapeDataString(json)}";
+            JObject response = api.RecupDistant("DELETE", "abonnement", param);
+            return response?["code"]?.ToString() == "200";
+        }
+
+        public List<Exemplaire> GetExemplairesByRevue(string idRevue)
+        {
+            string jsonIdRevue = convertToJson("id", idRevue);
+            string param = $"champs={Uri.EscapeDataString(jsonIdRevue)}";
+            return TraitementRecup<Exemplaire>("GET", "exemplaire", param);
+        }
+
+        public List<Abonnement> GetAllAbonnements()
+        {
+            // On récupère tous les abonnements (sans filtre particulier)
+            List<Abonnement> abonnements = TraitementRecup<Abonnement>("GET", "abonnement", null);
+
+            // On récupère toutes les commandes pour y associer la dateCommande et le montant
+            List<Commande> commandes = TraitementRecup<Commande>("GET", "commande", null);
+
+            // On complète chaque abonnement avec les infos de commande
+            foreach (Abonnement ab in abonnements)
+            {
+                Commande cmd = commandes.Find(c => c.Id == ab.Id);
+                if (cmd != null)
+                {
+                    ab.DateCommande = cmd.DateCommande;
+                    ab.Montant = cmd.Montant;
+                }
+            }
+
+            return abonnements;
+        }
+
+        public List<Abonnement> GetAbonnementsEcheantDans30Jours()
+        {
+            // Récupérer tous les abonnements
+            List<Abonnement> allAbonnements = GetAllAbonnements();
+
+            // Filtrer ceux dont la date de fin est <= DateTime.Now + 30 jours
+            DateTime limite = DateTime.Now.Date.AddDays(30);
+            List<Abonnement> abonnementsEcheant = allAbonnements
+                .Where(ab => ab.DateFinAbonnement <= limite)
+                .ToList();
+
+            // Les trier par date de fin d’abonnement (chronologique)
+            abonnementsEcheant.Sort((x, y) => x.DateFinAbonnement.CompareTo(y.DateFinAbonnement));
+
+            return abonnementsEcheant;
+        }
 
     }
 }
