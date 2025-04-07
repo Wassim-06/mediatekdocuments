@@ -465,5 +465,42 @@ namespace MediaTekDocuments.controller
             return access.GetAbonnementsEcheantDans30Jours();
         }
 
+        public List<Exemplaire> GetExemplairesByLivre(string idDocument)
+        {
+            return access.GetExemplairesByLivre(idDocument);
+        }
+
+        /// <summary>
+        /// Demande à l'API de changer l'état d'un exemplaire
+        /// </summary>
+        /// <param name="idDocument">ID du document</param>
+        /// <param name="numero">Numéro de l'exemplaire</param>
+        /// <param name="idEtat">Nouveau ID d'état</param>
+        public bool ModifierEtatExemplaire(string idDocument, int numero, string idEtat)
+        {
+            return access.ModifierEtatExemplaire(idDocument, numero, idEtat);
+        }
+
+        /// <summary>
+        /// Retourne la liste de tous les états disponibles
+        /// </summary>
+        public List<Etat> GetAllEtats()
+        {
+            return access.GetAllEtats();
+        }
+
+        /// <summary>
+        /// Supprime un exemplaire
+        /// </summary>
+        public bool SupprimerExemplaire(string idDocument, int numero)
+        {
+            return access.SupprimerExemplaire(idDocument, numero);
+        }
+
+        public List<Exemplaire> GetExemplairesByDvd(string idDocument)
+        {
+            return access.GetExemplairesByDvd(idDocument);
+        }
+
     }
 }

@@ -38,6 +38,8 @@ namespace MediaTekDocuments.dal
         private const string POST = "POST";
         /// <summary>
         /// méthode HTTP pour update
+        /// 
+        private const string PUT = "PUT";
 
         /// <summary>
         /// Méthode privée pour créer un singleton
@@ -573,6 +575,82 @@ namespace MediaTekDocuments.dal
 
             return abonnementsEcheant;
         }
+
+        /// <summary>
+        /// Récupère les exemplaires d'un document (livre ou autre) en filtrant par Id
+        /// </summary>
+        /// <param name="idDocument">ID du document (livre)</param>
+        /// <returns>Liste des exemplaires correspondants</returns>
+        public List<Exemplaire> GetExemplairesByLivre(string idDocument)
+        {
+            // Récupère TOUS les exemplaires
+            List<Exemplaire> tousLesExemplaires = TraitementRecup<Exemplaire>("GET", "exemplaire", null);
+
+            // Filtre sur l'ID et tri par date d'achat décroissante
+            return tousLesExemplaires
+                .Where(ex => ex.Id == idDocument)
+                .OrderByDescending(ex => ex.DateAchat)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Change l'état d'un exemplaire
+        /// </summary>
+        /// <param name="idDocument">ID du document</param>
+        /// <param name="numero">Numéro d'exemplaire</param>
+        /// <param name="idEtat">Nouveau état</param>
+        public bool ModifierEtatExemplaire(string idDocument, int numero, string idEtat)
+        {
+            Dictionary<string, string> parametres = new Dictionary<string, string>
+            {
+                { "id", idDocument },
+                { "numero", numero.ToString() },
+                { "idEtat", idEtat }
+            };
+
+            string json = JsonConvert.SerializeObject(parametres);
+            JObject retour = api.RecupDistant("PUT", $"exemplaire/{idDocument}", $"champs={Uri.EscapeDataString(json)}");
+
+            return retour != null && retour["code"].ToString() == "200";
+        }
+
+        /// <summary>
+        /// Récupère tous les états depuis l'API
+        /// </summary>
+        public List<Etat> GetAllEtats()
+        {
+            return TraitementRecup<Etat>("GET", "etat", null);
+        }
+
+        /// <summary>
+        /// Supprime un exemplaire donné
+        /// </summary>
+        public bool SupprimerExemplaire(string idDocument, int numero)
+        {
+            Dictionary<string, string> parametres = new Dictionary<string, string>
+            {
+                { "id", idDocument },
+                { "numero", numero.ToString() }
+            };
+
+            string json = JsonConvert.SerializeObject(parametres);
+            JObject retour = api.RecupDistant("DELETE", "exemplaire", $"champs={Uri.EscapeDataString(json)}");
+
+            return retour != null && retour["code"].ToString() == "200";
+        }
+
+        public List<Exemplaire> GetExemplairesByDvd(string idDocument)
+        {
+            // Récupère TOUS les exemplaires
+            List<Exemplaire> tousLesExemplaires = TraitementRecup<Exemplaire>("GET", "exemplaire", null);
+
+            // Filtre sur l'ID du DVD (c'est comme pour Livre)
+            return tousLesExemplaires
+                .Where(ex => ex.Id == idDocument)
+                .OrderByDescending(ex => ex.DateAchat)
+                .ToList();
+        }
+
 
     }
 }
