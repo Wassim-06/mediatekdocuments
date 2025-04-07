@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using MediaTekDocuments.manager;
 using System;
 using System.Windows.Forms;
+using System.Configuration;
 
 namespace MediaTekDocuments.controller
 {
@@ -19,8 +20,10 @@ namespace MediaTekDocuments.controller
         /// Objet d'accès aux données
         /// </summary>
         private readonly Access access;
-        private readonly ApiRest api = ApiRest.GetInstance("http://localhost/rest_mediatekdocuments/", "admin:adminpwd");
-
+        private readonly ApiRest api = ApiRest.GetInstance(
+            ConfigurationManager.AppSettings["ApiUrl"],
+            $"{ConfigurationManager.AppSettings["ApiLogin"]}:{ConfigurationManager.AppSettings["ApiPassword"]}"
+        );
         /// <summary>
         /// Récupération de l'instance unique d'accès aux données
         /// </summary>
@@ -154,28 +157,29 @@ namespace MediaTekDocuments.controller
             string param = $"champs={Uri.EscapeDataString(jsonData)}";
 
             JObject responseLivre = api.RecupDistant("DELETE", "livre", param);
-            if (responseLivre?["code"]?.ToString() != "200")
+            if (responseLivre == null || responseLivre["code"]?.ToString() != "200")
             {
-                MessageBox.Show("❌ Suppression dans la table 'livre' échouée.\n" + responseLivre.ToString());
+                MessageBox.Show("❌ Suppression dans la table 'livre' échouée.\nRéponse invalide ou nulle.");
                 return false;
             }
 
             JObject responseLivreDvd = api.RecupDistant("DELETE", "livres_dvd", param);
-            if (responseLivreDvd?["code"]?.ToString() != "200")
+            if (responseLivreDvd == null || responseLivreDvd["code"]?.ToString() != "200")
             {
-                MessageBox.Show("❌ Suppression dans la table 'livres_dvd' échouée.\n" + responseLivreDvd.ToString());
+                MessageBox.Show("❌ Suppression dans la table 'livres_dvd' échouée.\nRéponse invalide ou nulle.");
                 return false;
             }
 
             JObject responseDocument = api.RecupDistant("DELETE", "document", param);
-            if (responseDocument?["code"]?.ToString() != "200")
+            if (responseDocument == null || responseDocument["code"]?.ToString() != "200")
             {
-                MessageBox.Show("❌ Suppression dans la table 'document' échouée.\n" + responseDocument.ToString());
+                MessageBox.Show("❌ Suppression dans la table 'document' échouée.\nRéponse invalide ou nulle.");
                 return false;
             }
 
             return true;
         }
+
 
         public bool ModifierLivre(Livre livre)
         {
@@ -305,28 +309,30 @@ namespace MediaTekDocuments.controller
             string jsonData = JsonConvert.SerializeObject(new { id = idDVD });
             string param = $"champs={Uri.EscapeDataString(jsonData)}";
 
-            // En suivant la documentation, on peut aussi transmettre l'ID dans l'URL
             JObject responseDvd = api.RecupDistant("DELETE", "dvd", param);
-            JObject responseDvdLivre = api.RecupDistant("DELETE", "livres_dvd", param);
-            JObject responseDoc = api.RecupDistant("DELETE", "document", param);
+            if (responseDvd == null || responseDvd["code"]?.ToString() != "200")
+            {
+                MessageBox.Show("❌ Suppression dans la table 'dvd' échouée.\nRéponse invalide ou nulle.");
+                return false;
+            }
 
-            if (responseDvd?["code"]?.ToString() != "200")
+            JObject responseDvdLivre = api.RecupDistant("DELETE", "livres_dvd", param);
+            if (responseDvdLivre == null || responseDvdLivre["code"]?.ToString() != "200")
             {
-                MessageBox.Show("❌ Suppression dans la table 'dvd' échouée.\n" + responseDvd.ToString());
+                MessageBox.Show("❌ Suppression dans la table 'livres_dvd' échouée.\nRéponse invalide ou nulle.");
                 return false;
             }
-            if (responseDvdLivre?["code"]?.ToString() != "200")
+
+            JObject responseDoc = api.RecupDistant("DELETE", "document", param);
+            if (responseDoc == null || responseDoc["code"]?.ToString() != "200")
             {
-                MessageBox.Show("❌ Suppression dans la table 'livres_dvd' échouée.\n" + responseDvdLivre.ToString());
+                MessageBox.Show("❌ Suppression dans la table 'document' échouée.\nRéponse invalide ou nulle.");
                 return false;
             }
-            if (responseDoc?["code"]?.ToString() != "200")
-            {
-                MessageBox.Show("❌ Suppression dans la table 'document' échouée.\n" + responseDoc.ToString());
-                return false;
-            }
+
             return true;
         }
+
 
         public bool AjouterRevue(Revue revue)
         {
@@ -400,20 +406,22 @@ namespace MediaTekDocuments.controller
             string param = $"champs={Uri.EscapeDataString(jsonData)}";
 
             JObject responseRevue = api.RecupDistant("DELETE", "revue", param);
-            JObject responseDoc = api.RecupDistant("DELETE", "document", param);
+            if (responseRevue == null || responseRevue["code"]?.ToString() != "200")
+            {
+                MessageBox.Show("❌ Suppression dans la table 'revue' échouée.\nRéponse invalide ou nulle.");
+                return false;
+            }
 
-            if (responseRevue?["code"]?.ToString() != "200")
+            JObject responseDoc = api.RecupDistant("DELETE", "document", param);
+            if (responseDoc == null || responseDoc["code"]?.ToString() != "200")
             {
-                MessageBox.Show("❌ Suppression dans la table 'revue' échouée.\n" + responseRevue.ToString());
+                MessageBox.Show("❌ Suppression dans la table 'document' échouée.\nRéponse invalide ou nulle.");
                 return false;
             }
-            if (responseDoc?["code"]?.ToString() != "200")
-            {
-                MessageBox.Show("❌ Suppression dans la table 'document' échouée.\n" + responseDoc.ToString());
-                return false;
-            }
+
             return true;
         }
+
 
 
         public List<CommandeDocument> GetCommandesByLivre(string idLivre)

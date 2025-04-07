@@ -124,7 +124,7 @@ namespace MediaTekDocuments.manager
             catch (Exception ex)
             {
                 MessageBox.Show("❌ Erreur JSON : " + ex.Message + "\nRéponse brute :\n" + responseData);
-                return null;
+                return new JObject(); // ✅ Correction SonarLint S1168
             }
         }
 

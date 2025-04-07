@@ -126,7 +126,7 @@ namespace MediaTekDocuments.view
 
         #region Onglet Livres
         private readonly BindingSource bdgLivresListe = new BindingSource();
-        private List<Livre> lesLivres = new List<Livre>();
+        private List<Livre> lesLivres;
 
         /// <summary>
         /// Ouverture de l'onglet Livres : 
@@ -529,11 +529,11 @@ namespace MediaTekDocuments.view
                         frmModifier.Collection,
                         frmModifier.IdGenre,
                         // Vous pouvez récupérer le libellé associé si nécessaire, par exemple :
-                        controller.GetAllGenres().FirstOrDefault(g => g.Id == frmModifier.IdGenre)?.Libelle,
+                        controller.GetAllGenres().Find(g => g.Id == frmModifier.IdGenre)?.Libelle,
                         frmModifier.IdPublic,
-                        controller.GetAllPublics().FirstOrDefault(p => p.Id == frmModifier.IdPublic)?.Libelle,
+                        controller.GetAllPublics().Find(p => p.Id == frmModifier.IdPublic)?.Libelle,
                         frmModifier.IdRayon,
-                        controller.GetAllRayons().FirstOrDefault(r => r.Id == frmModifier.IdRayon)?.Libelle
+                        controller.GetAllRayons().Find(r => r.Id == frmModifier.IdRayon)?.Libelle
                     );
 
                     // Appel à la méthode de modification
@@ -815,7 +815,7 @@ namespace MediaTekDocuments.view
 
         #region Onglet Dvd
         private readonly BindingSource bdgDvdListe = new BindingSource();
-        private List<Dvd> lesDvd = new List<Dvd>();
+        private List<Dvd> lesDvd;
 
         /// <summary>
         /// Ouverture de l'onglet Dvds : 
@@ -1211,11 +1211,11 @@ namespace MediaTekDocuments.view
                         frmModifier.Realisateur,         // Réalisateur en 5ème position
                         frmModifier.Synopsis,            // Synopsis en 6ème position
                         frmModifier.IdGenre,
-                        controller.GetAllGenres().FirstOrDefault(g => g.Id == frmModifier.IdGenre)?.Libelle,
+                        controller.GetAllGenres().Find(g => g.Id == frmModifier.IdGenre)?.Libelle,
                         frmModifier.IdPublic,
-                        controller.GetAllPublics().FirstOrDefault(p => p.Id == frmModifier.IdPublic)?.Libelle,
+                        controller.GetAllPublics().Find(p => p.Id == frmModifier.IdPublic)?.Libelle,
                         frmModifier.IdRayon,
-                        controller.GetAllRayons().FirstOrDefault(r => r.Id == frmModifier.IdRayon)?.Libelle
+                        controller.GetAllRayons().Find(r => r.Id == frmModifier.IdRayon)?.Libelle
                     );
 
 
@@ -1285,7 +1285,7 @@ namespace MediaTekDocuments.view
 
         #region Onglet Revues
         private readonly BindingSource bdgRevuesListe = new BindingSource();
-        private List<Revue> lesRevues = new List<Revue>();
+        private List<Revue> lesRevues;
 
         /// <summary>
         /// Ouverture de l'onglet Revues : 
@@ -2093,7 +2093,7 @@ namespace MediaTekDocuments.view
             }
 
             // Vérifie si le livre existe
-            Livre livre = lesLivres.FirstOrDefault(l => l.Id == idLivre);
+            Livre livre = lesLivres.Find(l => l.Id == idLivre);
             if (livre == null)
             {
                 MessageBox.Show("Livre introuvable.");
@@ -2255,7 +2255,7 @@ namespace MediaTekDocuments.view
             }
 
             // Vérifie si le DVD existe
-            Dvd dvd = lesDvd.FirstOrDefault(d => d.Id == idDvd);
+            Dvd dvd = lesDvd.Find(d => d.Id == idDvd);
             if (dvd == null)
             {
                 MessageBox.Show("DVD introuvable.");
@@ -2415,7 +2415,7 @@ namespace MediaTekDocuments.view
                 return;
             }
 
-            Revue revue = lesRevues.FirstOrDefault(r => r.Id == idRevue);
+            Revue revue = lesRevues.Find(r => r.Id == idRevue);
             if (revue == null)
             {
                 MessageBox.Show("Revue introuvable.");
