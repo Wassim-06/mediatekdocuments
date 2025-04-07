@@ -7,7 +7,6 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using System.Configuration;
 using System.Linq;
-using System.Configuration;
 
 namespace MediaTekDocuments.dal
 {
@@ -16,10 +15,6 @@ namespace MediaTekDocuments.dal
     /// </summary>
     public class Access
     {
-        /// <summary>
-        /// adresse de l'API
-        /// </summary>
-        private static readonly string uriApi = "http://localhost/rest_mediatekdocuments/";
         /// <summary>
         /// instance unique de la classe
         /// </summary>
@@ -39,7 +34,6 @@ namespace MediaTekDocuments.dal
         /// <summary>
         /// méthode HTTP pour update
         /// 
-        private const string PUT = "PUT";
 
         /// <summary>
         /// Méthode privée pour créer un singleton
@@ -47,13 +41,13 @@ namespace MediaTekDocuments.dal
         /// </summary>
         private Access()
         {
-            string login = ConfigurationManager.AppSettings["ApiLogin"];
-            string password = ConfigurationManager.AppSettings["ApiPassword"];
-            String authenticationString;
             try
             {
-                authenticationString = $"{login}:{password}";
-                api = ApiRest.GetInstance(uriApi, authenticationString);
+                string login = ConfigurationManager.AppSettings["ApiLogin"];
+                string password = ConfigurationManager.AppSettings["ApiPassword"];
+                string apiUrl = ConfigurationManager.AppSettings["ApiUrl"];
+
+                api = ApiRest.GetInstance(apiUrl, $"{login}:{password}");
             }
             catch (Exception e)
             {
@@ -61,6 +55,8 @@ namespace MediaTekDocuments.dal
                 Environment.Exit(0);
             }
         }
+
+
 
         /// <summary>
         /// Création et retour de l'instance unique de la classe
@@ -323,8 +319,6 @@ namespace MediaTekDocuments.dal
 
         public bool AjouterCommande(CommandeDocument commande)
         {
-            ApiRest api = ApiRest.GetInstance("http://localhost/rest_mediatekdocuments/", "admin:adminpwd");
-
             // 1. Insertion dans la table 'commande' sans envoyer l'ID
             string messageCommande = "commande";
             string jsonCommande = JsonConvert.SerializeObject(new
@@ -367,7 +361,6 @@ namespace MediaTekDocuments.dal
 
         public string GetLastCommandeId()
         {
-            ApiRest api = ApiRest.GetInstance("http://localhost/rest_mediatekdocuments/", "admin:adminpwd");
             JObject response = api.RecupDistant("GET", "commande", null);
 
             if (response?["code"]?.ToString() == "200")
@@ -491,8 +484,6 @@ namespace MediaTekDocuments.dal
 
         public bool AjouterAbonnement(Abonnement abonnement)
         {
-            ApiRest api = ApiRest.GetInstance("http://localhost/rest_mediatekdocuments/", "admin:adminpwd");
-
             // 1. Insertion dans la table 'commande'
             string jsonCommande = JsonConvert.SerializeObject(new
             {
@@ -579,20 +570,29 @@ namespace MediaTekDocuments.dal
         }
 
         /// <summary>
+        /// Récupère les exemplaires d'un document (Livre ou DVD)
+        /// </summary>
+        /// <param name="idDocument">ID du document</param>
+        /// <returns>Liste des exemplaires</returns>
+        private List<Exemplaire> GetExemplairesByDocument(string idDocument)
+        {
+            List<Exemplaire> tousLesExemplaires = TraitementRecup<Exemplaire>("GET", "exemplaire", null);
+
+            return tousLesExemplaires
+                .Where(ex => ex.Id == idDocument)
+                .OrderByDescending(ex => ex.DateAchat)
+                .ToList();
+        }
+
+
+        /// <summary>
         /// Récupère les exemplaires d'un document (livre ou autre) en filtrant par Id
         /// </summary>
         /// <param name="idDocument">ID du document (livre)</param>
         /// <returns>Liste des exemplaires correspondants</returns>
         public List<Exemplaire> GetExemplairesByLivre(string idDocument)
         {
-            // Récupère TOUS les exemplaires
-            List<Exemplaire> tousLesExemplaires = TraitementRecup<Exemplaire>("GET", "exemplaire", null);
-
-            // Filtre sur l'ID et tri par date d'achat décroissante
-            return tousLesExemplaires
-                .Where(ex => ex.Id == idDocument)
-                .OrderByDescending(ex => ex.DateAchat)
-                .ToList();
+            return GetExemplairesByDocument(idDocument);
         }
 
         /// <summary>
@@ -643,14 +643,7 @@ namespace MediaTekDocuments.dal
 
         public List<Exemplaire> GetExemplairesByDvd(string idDocument)
         {
-            // Récupère TOUS les exemplaires
-            List<Exemplaire> tousLesExemplaires = TraitementRecup<Exemplaire>("GET", "exemplaire", null);
-
-            // Filtre sur l'ID du DVD (c'est comme pour Livre)
-            return tousLesExemplaires
-                .Where(ex => ex.Id == idDocument)
-                .OrderByDescending(ex => ex.DateAchat)
-                .ToList();
+            return GetExemplairesByDocument(idDocument);
         }
 
         /// <summary>
