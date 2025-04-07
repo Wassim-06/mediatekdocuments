@@ -7,7 +7,7 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using System.Configuration;
 using System.Linq;
-
+using System.Configuration;
 
 namespace MediaTekDocuments.dal
 {
@@ -47,10 +47,12 @@ namespace MediaTekDocuments.dal
         /// </summary>
         private Access()
         {
+            string login = ConfigurationManager.AppSettings["ApiLogin"];
+            string password = ConfigurationManager.AppSettings["ApiPassword"];
             String authenticationString;
             try
             {
-                authenticationString = "admin:adminpwd";
+                authenticationString = $"{login}:{password}";
                 api = ApiRest.GetInstance(uriApi, authenticationString);
             }
             catch (Exception e)
