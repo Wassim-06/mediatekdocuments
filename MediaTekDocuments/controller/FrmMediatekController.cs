@@ -12,7 +12,7 @@ namespace MediaTekDocuments.controller
     /// <summary>
     /// Contrôleur lié à FrmMediatek
     /// </summary>
-    class FrmMediatekController
+    public class FrmMediatekController
     {
 
         /// <summary>
@@ -500,6 +500,17 @@ namespace MediaTekDocuments.controller
         public List<Exemplaire> GetExemplairesByDvd(string idDocument)
         {
             return access.GetExemplairesByDvd(idDocument);
+        }
+
+        /// <summary>
+        /// Authentifie un utilisateur à partir de son login et mot de passe
+        /// </summary>
+        /// <param name="login">Login de l'utilisateur</param>
+        /// <param name="password">Mot de passe de l'utilisateur</param>
+        /// <returns>Utilisateur si trouvé, sinon null</returns>
+        public Utilisateur AuthentifierUtilisateur(string login, string password)
+        {
+            return access.AuthentifierUtilisateur(login, password);
         }
 
     }

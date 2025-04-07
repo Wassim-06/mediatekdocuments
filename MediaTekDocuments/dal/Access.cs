@@ -651,6 +651,36 @@ namespace MediaTekDocuments.dal
                 .ToList();
         }
 
+        /// <summary>
+        /// Authentifie un utilisateur via l'API
+        /// </summary>
+        public Utilisateur AuthentifierUtilisateur(string login, string password)
+        {
+            Dictionary<string, string> parametres = new Dictionary<string, string>
+            {
+                { "login", login },
+                { "password", password }
+            };
+
+            string json = JsonConvert.SerializeObject(parametres);
+            JObject retour = api.RecupDistant("POST", "authentification", $"champs={Uri.EscapeDataString(json)}");
+
+            if (retour != null && retour["code"].ToString() == "200")
+            {
+                JObject userData = (JObject)retour["result"];
+                return new Utilisateur(
+                    userData["id"].ToString(),
+                    userData["nom"].ToString(),
+                    userData["prenom"].ToString(),
+                    userData["service"].ToString()
+                );
+            }
+            else
+            {
+                return null;
+            }
+        }
+
 
     }
 }

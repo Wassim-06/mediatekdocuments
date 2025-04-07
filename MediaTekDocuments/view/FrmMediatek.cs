@@ -27,45 +27,84 @@ namespace MediaTekDocuments.view
         private readonly BindingSource bdgCommandesRevue = new BindingSource();
         private readonly BindingSource bdgExemplairesLivre = new BindingSource();
         private readonly BindingSource bdgExemplairesDvd = new BindingSource();
+        private readonly Utilisateur utilisateurConnecte;
 
         /// <summary>
         /// Constructeur : création du contrôleur lié à ce formulaire
         /// </summary>
-        internal FrmMediatek()
+        internal FrmMediatek(FrmMediatekController controller, Utilisateur utilisateurConnecte)
         {
             InitializeComponent();
-            this.controller = new FrmMediatekController();
-
-            lesRevues = controller.GetAllRevues();
+            this.controller = controller;
+            this.utilisateurConnecte = utilisateurConnecte; // 💥 On utilise celui qu'on reçoit aussi
+            lesLivres = controller.GetAllLivres(); // 🔥
+            lesDvd = controller.GetAllDvd();       // 🔥
+            lesRevues = controller.GetAllRevues(); // 🔥
             RemplirComboBoxEtat();
             RemplirComboBoxEtatDvd();
-            // Récupérer la liste des abonnements qui se terminent sous 30 jours
-            List<Abonnement> abonnementsEcheant = controller.GetAbonnementsEcheantDans30Jours();
 
-            // Si la liste est non vide, on affiche une petite fenêtre d’alerte
-            if (abonnementsEcheant.Count > 0)
+            AdapterInterfaceSelonService();
+            if (utilisateurConnecte.Service == "Commande")
             {
-                // Construire le message : titre + date de fin
-                // => Vous pouvez recouper ab.IdRevue avec lesRevues pour obtenir titre
-                List<string> lignes = new List<string>();
-                foreach (Abonnement ab in abonnementsEcheant)
+                List<Abonnement> abonnementsEcheant = controller.GetAbonnementsEcheantDans30Jours();
+
+                if (abonnementsEcheant.Count > 0)
                 {
-                    // Revue correspondante
-                    Revue revue = lesRevues.Find(r => r.Id == ab.IdRevue);
-                    string titre = (revue != null) ? revue.Titre : "Titre inconnu";
+                    List<string> lignes = new List<string>();
+                    foreach (Abonnement ab in abonnementsEcheant)
+                    {
+                        Revue revue = lesRevues.Find(r => r.Id == ab.IdRevue);
+                        string titre = (revue != null) ? revue.Titre : "Titre inconnu";
+                        lignes.Add($"- {titre} : fin le {ab.DateFinAbonnement:dd/MM/yyyy}");
+                    }
 
-                    lignes.Add($"- {titre} : fin le {ab.DateFinAbonnement:dd/MM/yyyy}");
+                    string message = "Abonnements se terminant dans moins de 30 jours :\n\n" +
+                                     string.Join("\n", lignes);
+
+                    MessageBox.Show(message,
+                        "Alerte - Échéances Abonnements",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
                 }
-
-                string message = "Abonnements se terminant dans moins de 30 jours :\n\n" +
-                                 string.Join("\n", lignes);
-
-                MessageBox.Show(message,
-                    "Alerte - Échéances Abonnements",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
             }
 
+        }
+
+        /// <summary>
+        /// Adapte l'interface selon le service de l'utilisateur connecté
+        /// </summary>
+        private void AdapterInterfaceSelonService()
+        {
+            switch (utilisateurConnecte.Service)
+            {
+                case "Prêt":
+                    // Peut uniquement voir l'onglet Livres
+                    tabOngletsApplication.TabPages.Remove(tabCommandesLivres);
+                    tabOngletsApplication.TabPages.Remove(tabCommandesDvd);
+                    tabOngletsApplication.TabPages.Remove(tabCmdRevues);
+                    break;
+
+
+                case "Commande":
+                    tabOngletsApplication.TabPages.Remove(tabLivres);
+                    tabOngletsApplication.TabPages.Remove(tabDvd);
+                    tabOngletsApplication.TabPages.Remove(tabRevues);
+                    tabOngletsApplication.TabPages.Remove(tabReceptionRevue);
+                    break;
+
+
+                case "Culture":
+                    // Pas le droit d'accéder -> ferme l'appli (normalement ça sera déjà fait à l'authentification)
+                    MessageBox.Show("❌ Vous n'avez pas accès à l'application.", "Accès refusé", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Application.Exit();
+                    break;
+
+                default:
+                    // Si un autre service inconnu => on ferme aussi
+                    MessageBox.Show("❌ Service non reconnu. Accès interdit.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Application.Exit();
+                    break;
+            }
         }
 
         /// <summary>
@@ -2420,8 +2459,6 @@ namespace MediaTekDocuments.view
 
         }
 
-        #endregion
-
         private void btnSupprimerAbonnement_Click(object sender, EventArgs e)
         {
             if (dgvCommandesRevue.SelectedRows.Count == 0)
@@ -2461,6 +2498,9 @@ namespace MediaTekDocuments.view
                 MessageBox.Show("❌ Erreur lors de la suppression.");
             }
         }
+
+
+        #endregion
 
     }
 }
