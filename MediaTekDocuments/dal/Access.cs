@@ -7,6 +7,7 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using System.Configuration;
 using System.Linq;
+using System.Diagnostics;
 
 namespace MediaTekDocuments.dal
 {
@@ -35,6 +36,14 @@ namespace MediaTekDocuments.dal
         /// méthode HTTP pour update
         /// 
 
+        static Access()
+        {
+            string logFilePath = "logs.txt"; // Fichier de logs
+            Trace.Listeners.Add(new TextWriterTraceListener(logFilePath));
+            Trace.AutoFlush = true; // Écrit direct dans le fichier sans attendre
+        }
+
+
         /// <summary>
         /// Méthode privée pour créer un singleton
         /// initialise l'accès à l'API
@@ -51,7 +60,7 @@ namespace MediaTekDocuments.dal
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                Trace.TraceError(e.Message);
                 Environment.Exit(0);
             }
         }
@@ -167,7 +176,7 @@ namespace MediaTekDocuments.dal
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Trace.TraceError(ex.Message);
             }
             return false;
         }
@@ -201,11 +210,11 @@ namespace MediaTekDocuments.dal
                 }
                 else
                 {
-                    Console.WriteLine("code erreur = " + code + " message = " + (String)retour["message"]);
+                    Trace.TraceError("code erreur = " + code + " message = " + (String)retour["message"]);
                 }
             }catch(Exception e)
             {
-                Console.WriteLine("Erreur lors de l'accès à l'API : "+e.Message);
+                Trace.TraceError("Erreur lors de l'accès à l'API : " +e.Message);
                 Environment.Exit(0);
             }
             return liste;
@@ -379,8 +388,8 @@ namespace MediaTekDocuments.dal
 
         public bool ModifierSuiviCommande(CommandeDocument commande, int nouvelIdSuivi)
         {
-            Console.WriteLine("Ancien suivi : " + commande.IdSuivi);
-            Console.WriteLine("Nouveau suivi : " + nouvelIdSuivi);
+            Trace.TraceError("Ancien suivi : " + commande.IdSuivi);
+            Trace.TraceError("Nouveau suivi : " + nouvelIdSuivi);
 
             // ✅ Règle 1 : une commande livrée ou réglée ne peut pas revenir à un état précédent
             if ((commande.IdSuivi == 3 || commande.IdSuivi == 4) && nouvelIdSuivi < commande.IdSuivi)
@@ -406,9 +415,9 @@ namespace MediaTekDocuments.dal
             string url = $"commandedocument/{commande.Id}";
 
             JObject response = api.RecupDistant("PUT", url, param);
-            Console.WriteLine("Requête PUT envoyée à l'API : " + url);
-            Console.WriteLine("Body : " + param);
-            Console.WriteLine("Code retour de l'API : " + response?["code"]);
+            Trace.TraceError("Requête PUT envoyée à l'API : " + url);
+            Trace.TraceError("Body : " + param);
+            Trace.TraceError("Code retour de l'API : " + response?["code"]);
 
             return response?["code"]?.ToString() == "200";
         }
@@ -419,7 +428,7 @@ namespace MediaTekDocuments.dal
             string param = $"champs={Uri.EscapeDataString(json)}";
             JObject response = api.RecupDistant("DELETE", "commandedocument", param);
 
-            Console.WriteLine("Suppression commande id : " + idCommande);
+            Trace.TraceError("Suppression commande id : " + idCommande);
             return response?["code"]?.ToString() == "200";
         }
 

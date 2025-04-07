@@ -2479,14 +2479,12 @@ namespace MediaTekDocuments.view
             // ✅ Ensuite on récupère les exemplaires (et on peut annuler la suppression si besoin)
             List<Exemplaire> exemplaires = controller.GetExemplairesByRevue(abonnement.IdRevue);
 
-            foreach (var ex in exemplaires)
+            if (exemplaires.Exists(ex => Utils.ParutionDansAbonnement(abonnement.DateCommande, abonnement.DateFinAbonnement, ex.DateAchat)))
             {
-                if (Utils.ParutionDansAbonnement(abonnement.DateCommande, abonnement.DateFinAbonnement, ex.DateAchat))
-                {
-                    MessageBox.Show("❌ Impossible de supprimer l’abonnement : des exemplaires sont liés à cette période.");
-                    return;
-                }
+                MessageBox.Show("❌ Impossible de supprimer l’abonnement : des exemplaires sont liés à cette période.");
+                return;
             }
+
 
             if (controller.SupprimerAbonnement(abonnement.Id))
             {
