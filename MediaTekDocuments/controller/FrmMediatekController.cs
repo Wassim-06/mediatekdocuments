@@ -11,21 +11,25 @@ using System.Configuration;
 namespace MediaTekDocuments.controller
 {
     /// <summary>
-    /// Contrôleur lié à FrmMediatek
+    /// Contrôleur lié à FrmMediatek.
     /// </summary>
     public class FrmMediatekController
     {
-
         /// <summary>
-        /// Objet d'accès aux données
+        /// Objet d'accès aux données.
         /// </summary>
         private readonly Access access;
+
+        /// <summary>
+        /// Instance de l'API REST configurée pour communiquer avec le serveur.
+        /// </summary>
         private readonly ApiRest api = ApiRest.GetInstance(
             ConfigurationManager.AppSettings["ApiUrl"],
             $"{ConfigurationManager.AppSettings["ApiLogin"]}:{ConfigurationManager.AppSettings["ApiPassword"]}"
         );
+
         /// <summary>
-        /// Récupération de l'instance unique d'accès aux données
+        /// Constructeur : récupère l'instance unique d'accès aux données.
         /// </summary>
         public FrmMediatekController()
         {
@@ -33,16 +37,16 @@ namespace MediaTekDocuments.controller
         }
 
         /// <summary>
-        /// getter sur la liste des genres
+        /// Récupère la liste de tous les genres.
         /// </summary>
-        /// <returns>Liste d'objets Genre</returns>
+        /// <returns>Liste d'objets Genre encapsulés en Categorie</returns>
         public List<Categorie> GetAllGenres()
         {
             return access.GetAllGenres();
         }
 
         /// <summary>
-        /// getter sur la liste des livres
+        /// Récupère la liste de tous les livres.
         /// </summary>
         /// <returns>Liste d'objets Livre</returns>
         public List<Livre> GetAllLivres()
@@ -51,16 +55,16 @@ namespace MediaTekDocuments.controller
         }
 
         /// <summary>
-        /// getter sur la liste des Dvd
+        /// Récupère la liste de tous les DVD.
         /// </summary>
-        /// <returns>Liste d'objets dvd</returns>
+        /// <returns>Liste d'objets Dvd</returns>
         public List<Dvd> GetAllDvd()
         {
             return access.GetAllDvd();
         }
 
         /// <summary>
-        /// getter sur la liste des revues
+        /// Récupère la liste de toutes les revues.
         /// </summary>
         /// <returns>Liste d'objets Revue</returns>
         public List<Revue> GetAllRevues()
@@ -69,28 +73,27 @@ namespace MediaTekDocuments.controller
         }
 
         /// <summary>
-        /// getter sur les rayons
+        /// Récupère la liste de tous les rayons.
         /// </summary>
-        /// <returns>Liste d'objets Rayon</returns>
+        /// <returns>Liste d'objets Rayon encapsulés en Categorie</returns>
         public List<Categorie> GetAllRayons()
         {
             return access.GetAllRayons();
         }
 
         /// <summary>
-        /// getter sur les publics
+        /// Récupère la liste de tous les publics.
         /// </summary>
-        /// <returns>Liste d'objets Public</returns>
+        /// <returns>Liste d'objets Public encapsulés en Categorie</returns>
         public List<Categorie> GetAllPublics()
         {
             return access.GetAllPublics();
         }
 
-
         /// <summary>
-        /// récupère les exemplaires d'une revue
+        /// Récupère les exemplaires d'une revue.
         /// </summary>
-        /// <param name="idDocuement">id de la revue concernée</param>
+        /// <param name="idDocuement">Identifiant de la revue concernée</param>
         /// <returns>Liste d'objets Exemplaire</returns>
         public List<Exemplaire> GetExemplairesRevue(string idDocuement)
         {
@@ -98,14 +101,20 @@ namespace MediaTekDocuments.controller
         }
 
         /// <summary>
-        /// Crée un exemplaire d'une revue dans la bdd
+        /// Crée un exemplaire d'une revue dans la base de données.
         /// </summary>
-        /// <param name="exemplaire">L'objet Exemplaire concerné</param>
-        /// <returns>True si la création a pu se faire</returns>
+        /// <param name="exemplaire">Objet Exemplaire à créer</param>
+        /// <returns>True si la création a réussi, sinon false</returns>
         public bool CreerExemplaire(Exemplaire exemplaire)
         {
             return access.CreerExemplaire(exemplaire);
         }
+
+        /// <summary>
+        /// Ajoute un livre dans la base de données en insérant dans les tables document, livres_dvd et livre.
+        /// </summary>
+        /// <param name="livre">Objet Livre à ajouter</param>
+        /// <returns>True si toutes les insertions réussissent, sinon false</returns>
         public bool AjouterLivre(Livre livre)
         {
             // Données pour le document
@@ -118,17 +127,17 @@ namespace MediaTekDocuments.controller
                 { "idPublic", livre.IdPublic },
                 { "idRayon", livre.IdRayon }
             };
-                    string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
+            string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
 
-                    // Données pour livres_dvd
-                    var livreDvdData = new Dictionary<string, string>()
+            // Données pour livres_dvd
+            var livreDvdData = new Dictionary<string, string>()
             {
                 { "id", livre.Id }
             };
-                    string livreDvdParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(livreDvdData))}";
+            string livreDvdParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(livreDvdData))}";
 
-                    // Données pour le livre
-                    var livreData = new Dictionary<string, string>()
+            // Données pour le livre
+            var livreData = new Dictionary<string, string>()
             {
                 { "id", livre.Id },
                 { "isbn", livre.Isbn },
@@ -146,11 +155,21 @@ namespace MediaTekDocuments.controller
                    responseLivre?["code"]?.ToString() == "200";
         }
 
+        /// <summary>
+        /// Vérifie si un document peut être supprimé (aucun exemplaire associé).
+        /// </summary>
+        /// <param name="idDocument">Identifiant du document</param>
+        /// <returns>True si le document peut être supprimé, sinon false</returns>
         public bool PeutSupprimerDocument(string idDocument)
         {
             return access.PeutSupprimerDocument(idDocument);
         }
 
+        /// <summary>
+        /// Supprime un livre en supprimant les enregistrements dans les tables livre, livres_dvd et document.
+        /// </summary>
+        /// <param name="idDocument">Identifiant du livre à supprimer</param>
+        /// <returns>True si toutes les suppressions réussissent, sinon false</returns>
         public bool SupprimerLivre(string idDocument)
         {
             string jsonData = JsonConvert.SerializeObject(new { id = idDocument });
@@ -180,7 +199,11 @@ namespace MediaTekDocuments.controller
             return true;
         }
 
-
+        /// <summary>
+        /// Modifie les informations d'un livre dans la base de données en mettant à jour les tables document, livres_dvd et livre.
+        /// </summary>
+        /// <param name="livre">Objet Livre modifié</param>
+        /// <returns>True si la modification réussit pour toutes les tables, sinon false</returns>
         public bool ModifierLivre(Livre livre)
         {
             // Préparer les données pour la table "document"
@@ -193,17 +216,17 @@ namespace MediaTekDocuments.controller
                 { "idPublic", livre.IdPublic },
                 { "idRayon", livre.IdRayon }
             };
-                    string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
+            string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
 
-                    // Préparer les données pour la table "livres_dvd"
-                    var livreDvdData = new Dictionary<string, string>()
+            // Préparer les données pour la table "livres_dvd"
+            var livreDvdData = new Dictionary<string, string>()
             {
                 { "id", livre.Id }
             };
-                    string livreDvdParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(livreDvdData))}";
+            string livreDvdParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(livreDvdData))}";
 
-                    // Préparer les données pour la table "livre"
-                    var livreData = new Dictionary<string, string>()
+            // Préparer les données pour la table "livre"
+            var livreData = new Dictionary<string, string>()
             {
                 { "id", livre.Id },
                 { "isbn", livre.Isbn },
@@ -212,7 +235,6 @@ namespace MediaTekDocuments.controller
             };
             string livreParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(livreData))}";
 
-            // Appel à l'API en utilisant PUT
             JObject responseDoc = api.RecupDistant("PUT", "document/" + livre.Id, docParams);
             JObject responseLivreDvd = api.RecupDistant("PUT", "livres_dvd/" + livre.Id, livreDvdParams);
             JObject responseLivre = api.RecupDistant("PUT", "livre/" + livre.Id, livreParams);
@@ -222,7 +244,11 @@ namespace MediaTekDocuments.controller
                    responseLivre?["code"]?.ToString() == "200";
         }
 
-
+        /// <summary>
+        /// Ajoute un DVD dans la base de données en insérant dans les tables document, livres_dvd et dvd.
+        /// </summary>
+        /// <param name="dvd">Objet Dvd à ajouter</param>
+        /// <returns>True si toutes les insertions réussissent, sinon false</returns>
         public bool AjouterDVD(Dvd dvd)
         {
             // Données pour la table "document"
@@ -235,17 +261,17 @@ namespace MediaTekDocuments.controller
                 { "idPublic", dvd.IdPublic },
                 { "idRayon", dvd.IdRayon }
             };
-                    string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
+            string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
 
-                    // Données pour la table "livres_dvd"
-                    var dvdLivreData = new Dictionary<string, string>()
+            // Données pour la table "livres_dvd"
+            var dvdLivreData = new Dictionary<string, string>()
             {
                 { "id", dvd.Id }
             };
-                    string dvdLivreParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(dvdLivreData))}";
+            string dvdLivreParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(dvdLivreData))}";
 
-                    // Données spécifiques pour la table "dvd"
-                    var dvdData = new Dictionary<string, string>()
+            // Données spécifiques pour la table "dvd"
+            var dvdData = new Dictionary<string, string>()
             {
                 { "id", dvd.Id },
                 { "realisateur", dvd.Realisateur },
@@ -263,6 +289,11 @@ namespace MediaTekDocuments.controller
                    responseDvd?["code"]?.ToString() == "200";
         }
 
+        /// <summary>
+        /// Modifie les informations d'un DVD dans la base de données en mettant à jour les tables document, livres_dvd et dvd.
+        /// </summary>
+        /// <param name="dvd">Objet Dvd modifié</param>
+        /// <returns>True si la modification réussit pour toutes les tables, sinon false</returns>
         public bool ModifierDVD(Dvd dvd)
         {
             // Préparer les données pour la table "document"
@@ -275,17 +306,17 @@ namespace MediaTekDocuments.controller
                 { "idPublic", dvd.IdPublic },
                 { "idRayon", dvd.IdRayon }
             };
-                    string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
+            string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
 
-                    // Pour "livres_dvd"
-                    var dvdLivreData = new Dictionary<string, string>()
+            // Pour "livres_dvd"
+            var dvdLivreData = new Dictionary<string, string>()
             {
                 { "id", dvd.Id }
             };
-                    string dvdLivreParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(dvdLivreData))}";
+            string dvdLivreParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(dvdLivreData))}";
 
-                    // Pour "dvd" (les champs spécifiques)
-                    var dvdData = new Dictionary<string, string>()
+            // Pour "dvd" (les champs spécifiques)
+            var dvdData = new Dictionary<string, string>()
             {
                 { "id", dvd.Id },
                 { "realisateur", dvd.Realisateur },
@@ -304,6 +335,11 @@ namespace MediaTekDocuments.controller
                    responseDvd?["code"]?.ToString() == "200";
         }
 
+        /// <summary>
+        /// Supprime un DVD en supprimant les enregistrements dans les tables dvd, livres_dvd et document.
+        /// </summary>
+        /// <param name="idDVD">Identifiant du DVD à supprimer</param>
+        /// <returns>True si toutes les suppressions réussissent, sinon false</returns>
         public bool SupprimerDVD(string idDVD)
         {
             string jsonData = JsonConvert.SerializeObject(new { id = idDVD });
@@ -333,7 +369,11 @@ namespace MediaTekDocuments.controller
             return true;
         }
 
-
+        /// <summary>
+        /// Ajoute une revue dans la base de données en insérant dans les tables document et revue.
+        /// </summary>
+        /// <param name="revue">Objet Revue à ajouter</param>
+        /// <returns>True si toutes les insertions réussissent, sinon false</returns>
         public bool AjouterRevue(Revue revue)
         {
             // Préparer les données pour la table "document"
@@ -346,7 +386,7 @@ namespace MediaTekDocuments.controller
                 { "idPublic", revue.IdPublic },
                 { "idRayon", revue.IdRayon }
             };
-                    string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
+            string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
 
             // Préparer les données spécifiques pour la table "revue"
             var revueData = new Dictionary<string, string>()
@@ -354,10 +394,9 @@ namespace MediaTekDocuments.controller
                 { "id", revue.Id },
                 { "periodicite", revue.Periodicite },
                 { "delaiMiseADispo", revue.DelaiMiseADispo.ToString() }
-                // Si tu n'as pas de date de parution, omets-la ou ajoute-la si nécessaire.
+                // Si aucune date de parution n'est disponible, elle peut être omise ou ajoutée selon le besoin.
             };
             string revueParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(revueData))}";
-
 
             // Envoi de la requête POST sur "document" et sur "revue"
             JObject responseDoc = api.RecupDistant("POST", "document", docParams);
@@ -367,6 +406,11 @@ namespace MediaTekDocuments.controller
                    responseRevue?["code"]?.ToString() == "200";
         }
 
+        /// <summary>
+        /// Modifie les informations d'une revue dans la base de données en mettant à jour les tables document et revue.
+        /// </summary>
+        /// <param name="revue">Objet Revue modifié</param>
+        /// <returns>True si la modification réussit pour toutes les tables, sinon false</returns>
         public bool ModifierRevue(Revue revue)
         {
             // Préparer les données pour la table "document"
@@ -379,7 +423,7 @@ namespace MediaTekDocuments.controller
                 { "idPublic", revue.IdPublic },
                 { "idRayon", revue.IdRayon }
             };
-                    string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
+            string docParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(docData))}";
 
             // Préparer les données pour la table "revue"
             var revueData = new Dictionary<string, string>()
@@ -390,7 +434,6 @@ namespace MediaTekDocuments.controller
             };
             string revueParams = $"champs={Uri.EscapeDataString(JsonConvert.SerializeObject(revueData))}";
 
-
             // Envoi de la requête PUT avec l'ID dans l'URL pour chaque table
             JObject responseDoc = api.RecupDistant("PUT", "document/" + revue.Id, docParams);
             JObject responseRevue = api.RecupDistant("PUT", "revue/" + revue.Id, revueParams);
@@ -399,7 +442,11 @@ namespace MediaTekDocuments.controller
                    responseRevue?["code"]?.ToString() == "200";
         }
 
-
+        /// <summary>
+        /// Supprime une revue en supprimant les enregistrements dans les tables revue et document.
+        /// </summary>
+        /// <param name="idRevue">Identifiant de la revue à supprimer</param>
+        /// <returns>True si toutes les suppressions réussissent, sinon false</returns>
         public bool SupprimerRevue(string idRevue)
         {
             string jsonData = JsonConvert.SerializeObject(new { id = idRevue });
@@ -422,104 +469,167 @@ namespace MediaTekDocuments.controller
             return true;
         }
 
-
-
+        /// <summary>
+        /// Récupère la liste des commandes associées à un livre.
+        /// </summary>
+        /// <param name="idLivre">Identifiant du livre</param>
+        /// <returns>Liste d'objets CommandeDocument liés au livre</returns>
         public List<CommandeDocument> GetCommandesByLivre(string idLivre)
         {
             return access.GetCommandesByLivre(idLivre);
         }
 
+        /// <summary>
+        /// Ajoute une commande pour un document.
+        /// </summary>
+        /// <param name="commande">Objet CommandeDocument à ajouter</param>
+        /// <returns>True si la commande a été ajoutée, sinon false</returns>
         public bool AjouterCommande(CommandeDocument commande)
         {
             return access.AjouterCommande(commande);
         }
 
+        /// <summary>
+        /// Modifie l'état de suivi d'une commande.
+        /// </summary>
+        /// <param name="commande">Commande à modifier</param>
+        /// <param name="nouvelIdSuivi">Nouvel identifiant de suivi</param>
+        /// <returns>True si la modification est réussie, sinon false</returns>
         public bool ModifierSuiviCommande(CommandeDocument commande, int nouvelIdSuivi)
         {
             return access.ModifierSuiviCommande(commande, nouvelIdSuivi);
         }
 
+        /// <summary>
+        /// Supprime une commande donnée.
+        /// </summary>
+        /// <param name="idCommande">Identifiant de la commande à supprimer</param>
+        /// <returns>True si la suppression est réussie, sinon false</returns>
         public bool SupprimerCommande(string idCommande)
         {
             return access.SupprimerCommande(idCommande);
         }
 
+        /// <summary>
+        /// Récupère la liste des commandes associées à un DVD.
+        /// </summary>
+        /// <param name="idDvd">Identifiant du DVD</param>
+        /// <returns>Liste d'objets CommandeDocument liés au DVD</returns>
         public List<CommandeDocument> GetCommandesByDvd(string idDvd)
         {
             return access.GetCommandesByDvd(idDvd);
         }
 
+        /// <summary>
+        /// Récupère la liste des abonnements associés à une revue.
+        /// </summary>
+        /// <param name="idRevue">Identifiant de la revue</param>
+        /// <returns>Liste d'objets Abonnement liés à la revue</returns>
         public List<Abonnement> GetAbonnementsByRevue(string idRevue)
         {
             return access.GetAbonnementsByRevue(idRevue);
         }
 
+        /// <summary>
+        /// Ajoute un abonnement pour une revue.
+        /// </summary>
+        /// <param name="abonnement">Objet Abonnement à ajouter</param>
+        /// <returns>True si l'ajout est réussi, sinon false</returns>
         public bool AjouterAbonnement(Abonnement abonnement)
         {
             return access.AjouterAbonnement(abonnement);
         }
+
+        /// <summary>
+        /// Supprime un abonnement donné.
+        /// </summary>
+        /// <param name="idAbonnement">Identifiant de l'abonnement à supprimer</param>
+        /// <returns>True si la suppression est réussie, sinon false</returns>
         public bool SupprimerAbonnement(string idAbonnement)
         {
             return access.SupprimerAbonnement(idAbonnement);
         }
 
+        /// <summary>
+        /// Récupère les exemplaires d'une revue à partir de son identifiant.
+        /// </summary>
+        /// <param name="idRevue">Identifiant de la revue</param>
+        /// <returns>Liste d'objets Exemplaire associés à la revue</returns>
         public List<Exemplaire> GetExemplairesByRevue(string idRevue)
         {
             return access.GetExemplairesByRevue(idRevue);
         }
 
+        /// <summary>
+        /// Récupère la liste des abonnements arrivant à échéance dans les 30 prochains jours.
+        /// </summary>
+        /// <returns>Liste d'objets Abonnement triés par date de fin</returns>
         public List<Abonnement> GetAbonnementsEcheantDans30Jours()
         {
             return access.GetAbonnementsEcheantDans30Jours();
         }
 
+        /// <summary>
+        /// Récupère les exemplaires d'un livre à partir de son identifiant.
+        /// </summary>
+        /// <param name="idDocument">Identifiant du livre</param>
+        /// <returns>Liste d'objets Exemplaire associés au livre</returns>
         public List<Exemplaire> GetExemplairesByLivre(string idDocument)
         {
             return access.GetExemplairesByLivre(idDocument);
         }
 
         /// <summary>
-        /// Demande à l'API de changer l'état d'un exemplaire
+        /// Demande à l'API de changer l'état d'un exemplaire.
         /// </summary>
         /// <param name="idDocument">ID du document</param>
         /// <param name="numero">Numéro de l'exemplaire</param>
         /// <param name="idEtat">Nouveau ID d'état</param>
+        /// <returns>True si la modification est réussie, sinon false</returns>
         public bool ModifierEtatExemplaire(string idDocument, int numero, string idEtat)
         {
             return access.ModifierEtatExemplaire(idDocument, numero, idEtat);
         }
 
         /// <summary>
-        /// Retourne la liste de tous les états disponibles
+        /// Récupère la liste de tous les états disponibles.
         /// </summary>
+        /// <returns>Liste d'objets Etat</returns>
         public List<Etat> GetAllEtats()
         {
             return access.GetAllEtats();
         }
 
         /// <summary>
-        /// Supprime un exemplaire
+        /// Supprime un exemplaire identifié par le document et le numéro d'exemplaire.
         /// </summary>
+        /// <param name="idDocument">Identifiant du document</param>
+        /// <param name="numero">Numéro de l'exemplaire à supprimer</param>
+        /// <returns>True si la suppression est réussie, sinon false</returns>
         public bool SupprimerExemplaire(string idDocument, int numero)
         {
             return access.SupprimerExemplaire(idDocument, numero);
         }
 
+        /// <summary>
+        /// Récupère les exemplaires d'un DVD à partir de son identifiant.
+        /// </summary>
+        /// <param name="idDocument">Identifiant du DVD</param>
+        /// <returns>Liste d'objets Exemplaire associés au DVD</returns>
         public List<Exemplaire> GetExemplairesByDvd(string idDocument)
         {
             return access.GetExemplairesByDvd(idDocument);
         }
 
         /// <summary>
-        /// Authentifie un utilisateur à partir de son login et mot de passe
+        /// Authentifie un utilisateur à partir de son login et mot de passe.
         /// </summary>
         /// <param name="login">Login de l'utilisateur</param>
         /// <param name="password">Mot de passe de l'utilisateur</param>
-        /// <returns>Utilisateur si trouvé, sinon null</returns>
+        /// <returns>Objet Utilisateur si trouvé, sinon null</returns>
         public Utilisateur AuthentifierUtilisateur(string login, string password)
         {
             return access.AuthentifierUtilisateur(login, password);
         }
-
     }
 }

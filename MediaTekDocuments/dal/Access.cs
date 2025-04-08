@@ -34,7 +34,7 @@ namespace MediaTekDocuments.dal
         private const string POST = "POST";
         /// <summary>
         /// méthode HTTP pour update
-        /// 
+        /// </summary>
 
         static Access()
         {
@@ -43,10 +43,8 @@ namespace MediaTekDocuments.dal
             Trace.AutoFlush = true; // Écrit direct dans le fichier sans attendre
         }
 
-
         /// <summary>
-        /// Méthode privée pour créer un singleton
-        /// initialise l'accès à l'API
+        /// Méthode privée pour créer un singleton et initialiser l'accès à l'API
         /// </summary>
         private Access()
         {
@@ -65,15 +63,13 @@ namespace MediaTekDocuments.dal
             }
         }
 
-
-
         /// <summary>
         /// Création et retour de l'instance unique de la classe
         /// </summary>
-        /// <returns>instance unique de la classe</returns>
+        /// <returns>instance unique de la classe Access</returns>
         public static Access GetInstance()
         {
-            if(instance == null)
+            if (instance == null)
             {
                 instance = new Access();
             }
@@ -83,7 +79,7 @@ namespace MediaTekDocuments.dal
         /// <summary>
         /// Retourne tous les genres à partir de la BDD
         /// </summary>
-        /// <returns>Liste d'objets Genre</returns>
+        /// <returns>Liste d'objets Genre sous forme de Categorie</returns>
         public List<Categorie> GetAllGenres()
         {
             IEnumerable<Genre> lesGenres = TraitementRecup<Genre>(GET, "genre", null);
@@ -93,7 +89,7 @@ namespace MediaTekDocuments.dal
         /// <summary>
         /// Retourne tous les rayons à partir de la BDD
         /// </summary>
-        /// <returns>Liste d'objets Rayon</returns>
+        /// <returns>Liste d'objets Rayon sous forme de Categorie</returns>
         public List<Categorie> GetAllRayons()
         {
             IEnumerable<Rayon> lesRayons = TraitementRecup<Rayon>(GET, "rayon", null);
@@ -103,7 +99,7 @@ namespace MediaTekDocuments.dal
         /// <summary>
         /// Retourne toutes les catégories de public à partir de la BDD
         /// </summary>
-        /// <returns>Liste d'objets Public</returns>
+        /// <returns>Liste d'objets Public sous forme de Categorie</returns>
         public List<Categorie> GetAllPublics()
         {
             IEnumerable<Public> lesPublics = TraitementRecup<Public>(GET, "public", null);
@@ -121,7 +117,7 @@ namespace MediaTekDocuments.dal
         }
 
         /// <summary>
-        /// Retourne toutes les dvd à partir de la BDD
+        /// Retourne tous les dvd à partir de la BDD
         /// </summary>
         /// <returns>Liste d'objets Dvd</returns>
         public List<Dvd> GetAllDvd()
@@ -140,11 +136,10 @@ namespace MediaTekDocuments.dal
             return lesRevues;
         }
 
-
         /// <summary>
-        /// Retourne les exemplaires d'une revue
+        /// Retourne les exemplaires d'une revue à partir de son identifiant
         /// </summary>
-        /// <param name="idDocument">id de la revue concernée</param>
+        /// <param name="idDocument">Identifiant de la revue concernée</param>
         /// <returns>Liste d'objets Exemplaire</returns>
         public List<Exemplaire> GetExemplairesRevue(string idDocument)
         {
@@ -153,6 +148,11 @@ namespace MediaTekDocuments.dal
             return lesExemplaires;
         }
 
+        /// <summary>
+        /// Retourne les exemplaires d'un document en fonction de son identifiant
+        /// </summary>
+        /// <param name="idDocument">Identifiant du document</param>
+        /// <returns>Liste d'objets Exemplaire</returns>
         public List<Exemplaire> GetExemplairesByIdDocument(string idDocument)
         {
             string jsonIdDocument = convertToJson("id", idDocument);
@@ -160,12 +160,11 @@ namespace MediaTekDocuments.dal
             return exemplaires;
         }
 
-
         /// <summary>
-        /// ecriture d'un exemplaire en base de données
+        /// Écriture d'un exemplaire en base de données
         /// </summary>
-        /// <param name="exemplaire">exemplaire à insérer</param>
-        /// <returns>true si l'insertion a pu se faire (retour != null)</returns>
+        /// <param name="exemplaire">Exemplaire à insérer</param>
+        /// <returns>true si l'insertion a pu se faire, sinon false</returns>
         public bool CreerExemplaire(Exemplaire exemplaire)
         {
             String jsonExemplaire = JsonConvert.SerializeObject(exemplaire, new CustomDateTimeConverter());
@@ -182,29 +181,28 @@ namespace MediaTekDocuments.dal
         }
 
         /// <summary>
-        /// Traitement de la récupération du retour de l'api, avec conversion du json en liste pour les select (GET)
+        /// Traite la récupération de données depuis l'API avec conversion du JSON en liste d'objets
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="methode">verbe HTTP (GET, POST, PUT, DELETE)</param>
-        /// <param name="message">information envoyée dans l'url</param>
-        /// <param name="parametres">paramètres à envoyer dans le body, au format "chp1=val1&chp2=val2&..."</param>
-        /// <returns>liste d'objets récupérés (ou liste vide)</returns>
-        private List<T> TraitementRecup<T> (String methode, String message, String parametres)
+        /// <typeparam name="T">Type d'objet attendu</typeparam>
+        /// <param name="methode">Verbe HTTP (GET, POST, etc.)</param>
+        /// <param name="message">Message ou point d'accès de l'API</param>
+        /// <param name="parametres">Paramètres à envoyer</param>
+        /// <returns>Liste d'objets récupérés ou liste vide</returns>
+        private List<T> TraitementRecup<T>(String methode, String message, String parametres)
         {
-            // trans
             List<T> liste = new List<T>();
             try
             {
                 JObject retour = api.RecupDistant(methode, message, parametres);
-                // extraction du code retourné
+                // Extraction du code retourné
                 String code = (String)retour["code"];
                 if (code.Equals("200"))
                 {
-                    // dans le cas du GET (select), récupération de la liste d'objets
+                    // Pour un GET : récupération de la liste d'objets
                     if (methode.Equals(GET))
                     {
                         String resultString = JsonConvert.SerializeObject(retour["result"]);
-                        // construction de la liste d'objets à partir du retour de l'api
+                        // Construction de la liste d'objets à partir du retour de l'API
                         liste = JsonConvert.DeserializeObject<List<T>>(resultString, new CustomBooleanJsonConverter());
                     }
                 }
@@ -212,20 +210,21 @@ namespace MediaTekDocuments.dal
                 {
                     Trace.TraceError("code erreur = " + code + " message = " + (String)retour["message"]);
                 }
-            }catch(Exception e)
+            }
+            catch (Exception e)
             {
-                Trace.TraceError("Erreur lors de l'accès à l'API : " +e.Message);
+                Trace.TraceError("Erreur lors de l'accès à l'API : " + e.Message);
                 Environment.Exit(0);
             }
             return liste;
         }
 
         /// <summary>
-        /// Convertit en json un couple nom/valeur
+        /// Convertit en JSON un couple nom/valeur
         /// </summary>
-        /// <param name="nom"></param>
-        /// <param name="valeur"></param>
-        /// <returns>couple au format json</returns>
+        /// <param name="nom">Nom de la clé</param>
+        /// <param name="valeur">Valeur associée</param>
+        /// <returns>Chaîne JSON représentant le couple</returns>
         private String convertToJson(Object nom, Object valeur)
         {
             Dictionary<Object, Object> dictionary = new Dictionary<Object, Object>();
@@ -234,7 +233,7 @@ namespace MediaTekDocuments.dal
         }
 
         /// <summary>
-        /// Modification du convertisseur Json pour gérer le format de date
+        /// Convertisseur personnalisé pour gérer le format de date
         /// </summary>
         private sealed class CustomDateTimeConverter : IsoDateTimeConverter
         {
@@ -245,9 +244,7 @@ namespace MediaTekDocuments.dal
         }
 
         /// <summary>
-        /// Modification du convertisseur Json pour prendre en compte les booléens
-        /// classe trouvée sur le site :
-        /// https://www.thecodebuzz.com/newtonsoft-jsonreaderexception-could-not-convert-string-to-boolean/
+        /// Convertisseur personnalisé pour gérer la conversion des booléens depuis JSON
         /// </summary>
         private sealed class CustomBooleanJsonConverter : JsonConverter<bool>
         {
@@ -265,8 +262,8 @@ namespace MediaTekDocuments.dal
         /// <summary>
         /// Vérifie si un document peut être supprimé (aucun exemplaire associé)
         /// </summary>
-        /// <param name="idDocument">id du document</param>
-        /// <returns>true si aucun exemplaire, false sinon</returns>
+        /// <param name="idDocument">Identifiant du document</param>
+        /// <returns>true si aucun exemplaire n'est associé, sinon false</returns>
         public bool PeutSupprimerDocument(string idDocument)
         {
             string message = "exemplaire/" + convertToJson("id", idDocument);
@@ -274,7 +271,11 @@ namespace MediaTekDocuments.dal
             return exemplaires.Count == 0;
         }
 
-
+        /// <summary>
+        /// Récupère les commandes associées à un livre via son identifiant
+        /// </summary>
+        /// <param name="idLivre">Identifiant du livre</param>
+        /// <returns>Liste des commandes liées au livre</returns>
         public List<CommandeDocument> GetCommandesByLivre(string idLivre)
         {
             // 1. Filtrer les CommandeDocument par idLivreDvd
@@ -286,7 +287,7 @@ namespace MediaTekDocuments.dal
             // 2. Récupérer toutes les commandes (avec date et montant)
             List<Commande> toutesLesCommandes = TraitementRecup<Commande>("GET", "commande", null);
 
-            // ✅ Dictionnaire de correspondance IdSuivi -> Libellé
+            // Dictionnaire de correspondance IdSuivi -> Libellé
             Dictionary<int, string> libellesSuivi = new Dictionary<int, string>
             {
                 { 1, "En cours" },
@@ -295,10 +296,10 @@ namespace MediaTekDocuments.dal
                 { 4, "Réglée" }
             };
 
-            // 3. Associer les infos à chaque commande
+            // 3. Associer les informations à chaque commande
             foreach (CommandeDocument cmdDoc in commandes)
             {
-                // Ajouter Date + Montant
+                // Ajouter Date et Montant
                 Commande cmdInfo = toutesLesCommandes.Find(c => c.Id == cmdDoc.Id);
                 if (cmdInfo != null)
                 {
@@ -306,7 +307,7 @@ namespace MediaTekDocuments.dal
                     cmdDoc.Montant = cmdInfo.Montant;
                 }
 
-                // Ajouter le libellé de suivi à partir du dictionnaire
+                // Ajouter le libellé de suivi
                 if (libellesSuivi.ContainsKey(cmdDoc.IdSuivi))
                 {
                     cmdDoc.LibelleSuivi = libellesSuivi[cmdDoc.IdSuivi];
@@ -320,12 +321,11 @@ namespace MediaTekDocuments.dal
             return commandes;
         }
 
-
-
-
-
-
-
+        /// <summary>
+        /// Ajoute une nouvelle commande de document
+        /// </summary>
+        /// <param name="commande">Commande à ajouter</param>
+        /// <returns>True si l'ajout est réussi, sinon false</returns>
         public bool AjouterCommande(CommandeDocument commande)
         {
             // 1. Insertion dans la table 'commande' sans envoyer l'ID
@@ -342,14 +342,14 @@ namespace MediaTekDocuments.dal
                 return false;
             }
 
-            // 2. Récupérer l'ID de la dernière commande (car il n'est pas retourné dans la réponse du POST)
+            // 2. Récupérer l'ID de la dernière commande (non retourné dans le POST)
             string newId = GetLastCommandeId();
             if (string.IsNullOrEmpty(newId))
             {
                 return false;
             }
 
-            // On met à jour l'ID de l'objet commande
+            // Mise à jour de l'ID de l'objet commande
             commande.Id = newId;
 
             // 3. Insertion dans la table 'commandedocument'
@@ -367,7 +367,10 @@ namespace MediaTekDocuments.dal
             return responseCommandeDocument?["code"]?.ToString() == "200";
         }
 
-
+        /// <summary>
+        /// Récupère l'identifiant de la dernière commande enregistrée
+        /// </summary>
+        /// <returns>Identifiant de la dernière commande si trouvé, sinon null</returns>
         public string GetLastCommandeId()
         {
             JObject response = api.RecupDistant("GET", "commande", null);
@@ -386,24 +389,30 @@ namespace MediaTekDocuments.dal
             return null;
         }
 
+        /// <summary>
+        /// Modifie l'état de suivi d'une commande
+        /// </summary>
+        /// <param name="commande">Commande dont le suivi doit être modifié</param>
+        /// <param name="nouvelIdSuivi">Nouvel identifiant de suivi</param>
+        /// <returns>True si la modification est réussie, sinon false</returns>
         public bool ModifierSuiviCommande(CommandeDocument commande, int nouvelIdSuivi)
         {
             Trace.TraceError("Ancien suivi : " + commande.IdSuivi);
             Trace.TraceError("Nouveau suivi : " + nouvelIdSuivi);
 
-            // ✅ Règle 1 : une commande livrée ou réglée ne peut pas revenir à un état précédent
+            // Règle 1 : une commande livrée ou réglée ne peut pas revenir à un état antérieur
             if ((commande.IdSuivi == 3 || commande.IdSuivi == 4) && nouvelIdSuivi < commande.IdSuivi)
             {
                 return false;
             }
 
-            // ✅ Règle 2 : une commande ne peut pas passer à "réglée" sans être livrée
+            // Règle 2 : une commande ne peut pas passer à "réglée" sans être livrée
             if (nouvelIdSuivi == 4 && commande.IdSuivi != 3)
             {
                 return false;
             }
 
-            // ✅ Préparer le corps de la requête (le champ à modifier)
+            // Préparation du corps de la requête
             string jsonUpdate = JsonConvert.SerializeObject(new
             {
                 idSuivi = nouvelIdSuivi
@@ -411,7 +420,7 @@ namespace MediaTekDocuments.dal
 
             string param = $"champs={Uri.EscapeDataString(jsonUpdate)}";
 
-            // ✅ L’ID doit être dans l’URL maintenant
+            // L’ID doit être dans l’URL
             string url = $"commandedocument/{commande.Id}";
 
             JObject response = api.RecupDistant("PUT", url, param);
@@ -422,6 +431,11 @@ namespace MediaTekDocuments.dal
             return response?["code"]?.ToString() == "200";
         }
 
+        /// <summary>
+        /// Supprime une commande de document
+        /// </summary>
+        /// <param name="idCommande">Identifiant de la commande à supprimer</param>
+        /// <returns>True si la suppression est réussie, sinon false</returns>
         public bool SupprimerCommande(string idCommande)
         {
             string json = JsonConvert.SerializeObject(new { id = idCommande });
@@ -432,9 +446,11 @@ namespace MediaTekDocuments.dal
             return response?["code"]?.ToString() == "200";
         }
 
-
-
-
+        /// <summary>
+        /// Récupère les commandes associées à un DVD via son identifiant
+        /// </summary>
+        /// <param name="idDvd">Identifiant du DVD</param>
+        /// <returns>Liste des commandes liées au DVD</returns>
         public List<CommandeDocument> GetCommandesByDvd(string idDvd)
         {
             string jsonIdDvd = convertToJson("idLivreDvd", idDvd);
@@ -469,6 +485,11 @@ namespace MediaTekDocuments.dal
             return commandes;
         }
 
+        /// <summary>
+        /// Récupère les abonnements associés à une revue via son identifiant
+        /// </summary>
+        /// <param name="idRevue">Identifiant de la revue</param>
+        /// <returns>Liste des abonnements liés à la revue</returns>
         public List<Abonnement> GetAbonnementsByRevue(string idRevue)
         {
             string jsonIdRevue = convertToJson("idRevue", idRevue);
@@ -491,6 +512,11 @@ namespace MediaTekDocuments.dal
             return abonnements;
         }
 
+        /// <summary>
+        /// Ajoute un abonnement pour une revue
+        /// </summary>
+        /// <param name="abonnement">Abonnement à ajouter</param>
+        /// <returns>True si l'ajout est réussi, sinon false</returns>
         public bool AjouterAbonnement(Abonnement abonnement)
         {
             // 1. Insertion dans la table 'commande'
@@ -524,6 +550,11 @@ namespace MediaTekDocuments.dal
             return responseAbonnement?["code"]?.ToString() == "200";
         }
 
+        /// <summary>
+        /// Supprime un abonnement en fonction de son identifiant
+        /// </summary>
+        /// <param name="idAbonnement">Identifiant de l'abonnement à supprimer</param>
+        /// <returns>True si la suppression est réussie, sinon false</returns>
         public bool SupprimerAbonnement(string idAbonnement)
         {
             string json = JsonConvert.SerializeObject(new { id = idAbonnement });
@@ -532,6 +563,11 @@ namespace MediaTekDocuments.dal
             return response?["code"]?.ToString() == "200";
         }
 
+        /// <summary>
+        /// Récupère les exemplaires d'une revue via son identifiant
+        /// </summary>
+        /// <param name="idRevue">Identifiant de la revue</param>
+        /// <returns>Liste des exemplaires associés à la revue</returns>
         public List<Exemplaire> GetExemplairesByRevue(string idRevue)
         {
             string jsonIdRevue = convertToJson("id", idRevue);
@@ -539,15 +575,19 @@ namespace MediaTekDocuments.dal
             return TraitementRecup<Exemplaire>("GET", "exemplaire", param);
         }
 
+        /// <summary>
+        /// Récupère tous les abonnements enregistrés
+        /// </summary>
+        /// <returns>Liste de tous les abonnements</returns>
         public List<Abonnement> GetAllAbonnements()
         {
-            // On récupère tous les abonnements (sans filtre particulier)
+            // Récupération de tous les abonnements sans filtre particulier
             List<Abonnement> abonnements = TraitementRecup<Abonnement>("GET", "abonnement", null);
 
-            // On récupère toutes les commandes pour y associer la dateCommande et le montant
+            // Récupération de toutes les commandes pour associer la dateCommande et le montant
             List<Commande> commandes = TraitementRecup<Commande>("GET", "commande", null);
 
-            // On complète chaque abonnement avec les infos de commande
+            // Complétion de chaque abonnement avec les informations de commande
             foreach (Abonnement ab in abonnements)
             {
                 Commande cmd = commandes.Find(c => c.Id == ab.Id);
@@ -561,6 +601,10 @@ namespace MediaTekDocuments.dal
             return abonnements;
         }
 
+        /// <summary>
+        /// Récupère les abonnements qui arriveront à échéance dans 30 jours
+        /// </summary>
+        /// <returns>Liste des abonnements à échéance dans 30 jours triés par date de fin</returns>
         public List<Abonnement> GetAbonnementsEcheantDans30Jours()
         {
             // Récupérer tous les abonnements
@@ -572,17 +616,17 @@ namespace MediaTekDocuments.dal
                 .Where(ab => ab.DateFinAbonnement <= limite)
                 .ToList();
 
-            // Les trier par date de fin d’abonnement (chronologique)
+            // Tri par date de fin d’abonnement (chronologique)
             abonnementsEcheant.Sort((x, y) => x.DateFinAbonnement.CompareTo(y.DateFinAbonnement));
 
             return abonnementsEcheant;
         }
 
         /// <summary>
-        /// Récupère les exemplaires d'un document (Livre ou DVD)
+        /// Récupère les exemplaires d'un document (Livre ou DVD) en se basant sur son identifiant
         /// </summary>
-        /// <param name="idDocument">ID du document</param>
-        /// <returns>Liste des exemplaires</returns>
+        /// <param name="idDocument">Identifiant du document</param>
+        /// <returns>Liste des exemplaires, triés par date d'achat décroissante</returns>
         private List<Exemplaire> GetExemplairesByDocument(string idDocument)
         {
             List<Exemplaire> tousLesExemplaires = TraitementRecup<Exemplaire>("GET", "exemplaire", null);
@@ -593,23 +637,33 @@ namespace MediaTekDocuments.dal
                 .ToList();
         }
 
-
         /// <summary>
-        /// Récupère les exemplaires d'un document (livre ou autre) en filtrant par Id
+        /// Récupère les exemplaires d'un livre via son identifiant
         /// </summary>
-        /// <param name="idDocument">ID du document (livre)</param>
-        /// <returns>Liste des exemplaires correspondants</returns>
+        /// <param name="idDocument">Identifiant du livre</param>
+        /// <returns>Liste des exemplaires du livre</returns>
         public List<Exemplaire> GetExemplairesByLivre(string idDocument)
         {
             return GetExemplairesByDocument(idDocument);
         }
 
         /// <summary>
-        /// Change l'état d'un exemplaire
+        /// Récupère les exemplaires d'un DVD via son identifiant
         /// </summary>
-        /// <param name="idDocument">ID du document</param>
+        /// <param name="idDocument">Identifiant du DVD</param>
+        /// <returns>Liste des exemplaires du DVD</returns>
+        public List<Exemplaire> GetExemplairesByDvd(string idDocument)
+        {
+            return GetExemplairesByDocument(idDocument);
+        }
+
+        /// <summary>
+        /// Modifie l'état d'un exemplaire
+        /// </summary>
+        /// <param name="idDocument">Identifiant du document</param>
         /// <param name="numero">Numéro d'exemplaire</param>
-        /// <param name="idEtat">Nouveau état</param>
+        /// <param name="idEtat">Nouvel état à attribuer</param>
+        /// <returns>True si la modification est réussie, sinon false</returns>
         public bool ModifierEtatExemplaire(string idDocument, int numero, string idEtat)
         {
             Dictionary<string, string> parametres = new Dictionary<string, string>
@@ -628,6 +682,7 @@ namespace MediaTekDocuments.dal
         /// <summary>
         /// Récupère tous les états depuis l'API
         /// </summary>
+        /// <returns>Liste d'objets Etat</returns>
         public List<Etat> GetAllEtats()
         {
             return TraitementRecup<Etat>("GET", "etat", null);
@@ -636,6 +691,9 @@ namespace MediaTekDocuments.dal
         /// <summary>
         /// Supprime un exemplaire donné
         /// </summary>
+        /// <param name="idDocument">Identifiant du document</param>
+        /// <param name="numero">Numéro d'exemplaire à supprimer</param>
+        /// <returns>True si la suppression est réussie, sinon false</returns>
         public bool SupprimerExemplaire(string idDocument, int numero)
         {
             Dictionary<string, string> parametres = new Dictionary<string, string>
@@ -650,14 +708,12 @@ namespace MediaTekDocuments.dal
             return retour != null && retour["code"].ToString() == "200";
         }
 
-        public List<Exemplaire> GetExemplairesByDvd(string idDocument)
-        {
-            return GetExemplairesByDocument(idDocument);
-        }
-
         /// <summary>
         /// Authentifie un utilisateur via l'API
         /// </summary>
+        /// <param name="login">Nom d'utilisateur</param>
+        /// <param name="password">Mot de passe de l'utilisateur</param>
+        /// <returns>Objet Utilisateur authentifié ou null en cas d'échec</returns>
         public Utilisateur AuthentifierUtilisateur(string login, string password)
         {
             Dictionary<string, string> parametres = new Dictionary<string, string>
@@ -684,7 +740,5 @@ namespace MediaTekDocuments.dal
                 return null;
             }
         }
-
-
     }
 }
