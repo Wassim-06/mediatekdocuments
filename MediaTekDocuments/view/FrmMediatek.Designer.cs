@@ -2388,9 +2388,10 @@ namespace MediaTekDocuments.view
             this.label64.AutoSize = true;
             this.label64.Location = new System.Drawing.Point(329, 57);
             this.label64.Name = "label64";
-            this.label64.Size = new System.Drawing.Size(90, 13);
+            this.label64.Size = new System.Drawing.Size(94, 13);
             this.label64.TabIndex = 4;
-            this.label64.Text = "Numéro du livre : ";
+            this.label64.Text = "Numéro du Dvd  : ";
+            this.label64.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
             // tabCmdRevues
             // 
